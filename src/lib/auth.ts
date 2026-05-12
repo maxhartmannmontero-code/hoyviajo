@@ -26,6 +26,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
+    async signIn({ user }) {
+      const allowed = ["maxhartmannmontero@gmail.com", "carolinamatthewsc@gmail.com"];
+      return allowed.includes(user.email ?? "") ? true : "/auth/signin?error=AccessDenied";
+    },
     async jwt({ token, account }) {
       if (account) {
         token.accessToken = account.access_token;
