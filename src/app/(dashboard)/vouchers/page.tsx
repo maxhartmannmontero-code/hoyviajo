@@ -17,6 +17,7 @@ function UploadModal({
   const [file, setFile] = useState<File | null>(null);
   const [form, setForm] = useState({
     contactId: "",
+    newContactName: "",
     amount: "",
     currency: "USD",
     date: new Date().toISOString().split("T")[0],
@@ -27,16 +28,18 @@ function UploadModal({
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const isNew = form.contactId === "__new__";
   const selectedContact = contacts.find((c) => c.id === form.contactId);
+  const resolvedName = isNew ? form.newContactName : (selectedContact?.name ?? "");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!file || !selectedContact) return;
+    if (!file || !resolvedName) return;
     setUploading(true);
     const fd = new FormData();
     fd.append("file", file);
-    fd.append("contactId", form.contactId);
-    fd.append("contactName", selectedContact.name);
+    fd.append("contactId", isNew ? "" : form.contactId);
+    fd.append("contactName", resolvedName);
     fd.append("amount", form.amount);
     fd.append("currency", form.currency);
     fd.append("date", form.date);
@@ -78,11 +81,22 @@ function UploadModal({
 
           <div>
             <label className="text-xs font-medium text-gray-700 block mb-1">Cliente *</label>
-            <select required value={form.contactId} onChange={(e) => setForm({ ...form, contactId: e.target.value })}
+            <select required value={form.contactId} onChange={(e) => setForm({ ...form, contactId: e.target.value, newContactName: "" })}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">Seleccionar cliente</option>
               {contacts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              <option value="__new__">+ Agregar nombre nuevo...</option>
             </select>
+            {isNew && (
+              <input
+                required
+                autoFocus
+                placeholder="Nombre del cliente"
+                value={form.newContactName}
+                onChange={(e) => setForm({ ...form, newContactName: e.target.value })}
+                className="w-full border border-blue-300 rounded-lg px-3 py-2 text-sm mt-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-4">
