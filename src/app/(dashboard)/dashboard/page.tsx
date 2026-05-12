@@ -13,17 +13,18 @@ interface StatCardProps {
   label: string;
   value: string | number;
   sub?: string;
-  color: string;
+  accent: string;
+  iconBg: string;
 }
 
-function StatCard({ icon, label, value, sub, color }: StatCardProps) {
+function StatCard({ icon, label, value, sub, accent, iconBg }: StatCardProps) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-5 flex items-start gap-4 shadow-sm">
-      <div className={`p-3 rounded-xl ${color}`}>{icon}</div>
-      <div>
-        <p className="text-sm text-gray-500">{label}</p>
-        <p className="text-2xl font-bold text-gray-900 mt-0.5">{value}</p>
-        {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+    <div className={`bg-white rounded-xl border border-gray-100 border-l-4 ${accent} p-5 flex items-start gap-4 shadow-sm hover:shadow-md transition-shadow`}>
+      <div className={`p-2.5 rounded-xl ${iconBg} flex-shrink-0`}>{icon}</div>
+      <div className="min-w-0">
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide leading-none mb-1.5">{label}</p>
+        <p className="text-2xl font-bold text-gray-900 leading-none">{value}</p>
+        {sub && <p className="text-xs text-gray-400 mt-1.5">{sub}</p>}
       </div>
     </div>
   );
@@ -64,7 +65,6 @@ export default function DashboardPage() {
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const newThisMonth = contacts.filter((c) => c.createdAt?.startsWith(thisMonth)).length;
 
-  // Financial this month
   const monthCommissions = sales
     .filter((s) => {
       const d = s.saleDate || s.createdAt || "";
@@ -96,7 +96,6 @@ export default function DashboardPage() {
     .sort((a, b) => a.checkIn.localeCompare(b.checkIn))
     .slice(0, 4);
 
-  // Current week KPIs
   const weekStart = (() => {
     const d = new Date(now);
     const day = d.getDay();
@@ -120,89 +119,112 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-6 lg:p-8 min-h-full bg-slate-50/60">
+
+      {/* ── Header ── */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 text-sm mt-1">Resumen general de tu CRM</p>
+        <p className="text-xs font-semibold text-[#3c93d6] uppercase tracking-widest mb-1.5">
+          {now.toLocaleDateString("es-CL", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+        </p>
+        <h1 className="text-3xl font-bold text-gray-900 leading-tight">Dashboard</h1>
+        <p className="text-gray-400 text-sm mt-1">Resumen general · Hoy Viajo CRM</p>
       </div>
 
+      {/* ── KPI cards ── */}
       <div className="grid grid-cols-2 xl:grid-cols-3 gap-4 mb-6">
         <StatCard
-          icon={<Users size={20} className="text-[#3c93d6]" />}
+          icon={<Users size={18} className="text-[#3c93d6]" />}
           label="Total Contactos"
           value={contacts.length}
           sub={`+${newThisMonth} este mes`}
-          color="bg-[#ddeef9]"
+          accent="border-l-[#3c93d6]"
+          iconBg="bg-[#ddeef9]"
         />
         <StatCard
-          icon={<TrendingUp size={20} className="text-purple-600" />}
+          icon={<TrendingUp size={18} className="text-purple-600" />}
           label="Deals Activos"
           value={activeDeals.length}
           sub={`Pipeline: ${formatCurrency(pipeline)}`}
-          color="bg-purple-50"
+          accent="border-l-purple-500"
+          iconBg="bg-purple-50"
         />
         <StatCard
-          icon={<Bell size={20} className="text-orange-600" />}
+          icon={<Bell size={18} className="text-orange-500" />}
           label="Follow-ups Pendientes"
           value={pendingFollowUps}
-          color="bg-orange-50"
+          accent="border-l-orange-400"
+          iconBg="bg-orange-50"
         />
         <StatCard
-          icon={<CheckCircle size={20} className="text-emerald-600" />}
+          icon={<CheckCircle size={18} className="text-emerald-600" />}
           label="Clientes Activos"
           value={contacts.filter((c) => c.status === "cliente").length}
-          color="bg-emerald-50"
+          accent="border-l-emerald-500"
+          iconBg="bg-emerald-50"
         />
         <StatCard
-          icon={<UserPlus size={20} className="text-cyan-600" />}
+          icon={<UserPlus size={18} className="text-cyan-600" />}
           label="Nuevos este Mes"
           value={newThisMonth}
-          color="bg-cyan-50"
+          accent="border-l-cyan-500"
+          iconBg="bg-cyan-50"
         />
         <StatCard
-          icon={<DollarSign size={20} className="text-green-600" />}
+          icon={<DollarSign size={18} className="text-green-600" />}
           label="Deals Cerrados"
           value={formatCurrency(totalRevenue)}
           sub={`${closedWon.length} ganados`}
-          color="bg-green-50"
+          accent="border-l-green-500"
+          iconBg="bg-green-50"
         />
       </div>
 
-      {/* Financial snapshot */}
-      <div className="grid grid-cols-3 gap-4 mb-8 p-4 bg-gradient-to-r from-slate-50 to-blue-50 rounded-2xl border border-slate-100">
-        <div className="text-center">
-          <p className="text-xs text-gray-500 mb-1">Comisiones este mes</p>
-          <p className="text-xl font-bold text-green-700">{fmtCLP(monthCommissions)}</p>
-        </div>
-        <div className="text-center border-x border-slate-200">
-          <p className="text-xs text-gray-500 mb-1">Gastos registrados</p>
-          <p className="text-xl font-bold text-red-600">{fmtCLP(monthExpTotal)}</p>
-        </div>
-        <div className="text-center">
-          <p className="text-xs text-gray-500 mb-1">Resultado neto</p>
-          <p className={`text-xl font-bold ${monthNet >= 0 ? "text-emerald-700" : "text-red-600"}`}>
-            {fmtCLP(monthNet)}
-          </p>
+      {/* ── Financial snapshot ── */}
+      <div className="mb-8 bg-gradient-to-r from-[#1a3a5c] to-[#2d6da3] rounded-2xl p-6 shadow-lg">
+        <p className="text-xs font-semibold text-blue-300 uppercase tracking-widest mb-5">
+          Resultado financiero · {now.toLocaleDateString("es-CL", { month: "long", year: "numeric" })}
+        </p>
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <p className="text-xs text-blue-300 mb-1">Comisiones</p>
+            <p className="text-2xl font-bold text-green-300">{fmtCLP(monthCommissions)}</p>
+          </div>
+          <div className="border-x border-white/20 px-4">
+            <p className="text-xs text-blue-300 mb-1">Gastos registrados</p>
+            <p className="text-2xl font-bold text-red-300">{fmtCLP(monthExpTotal)}</p>
+          </div>
+          <div className="pl-4">
+            <p className="text-xs text-blue-300 mb-1">Resultado neto</p>
+            <p className={`text-2xl font-bold ${monthNet >= 0 ? "text-emerald-300" : "text-red-300"}`}>
+              {fmtCLP(monthNet)}
+            </p>
+          </div>
         </div>
       </div>
 
+      {/* ── Bottom grid ── */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <h2 className="font-semibold text-gray-900 mb-4">Contactos Recientes</h2>
+
+        {/* Contactos recientes */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="w-1 h-4 rounded-full bg-[#3c93d6] inline-block flex-shrink-0" />
+            Contactos Recientes
+          </h2>
           {recentContacts.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-6">No hay contactos aún</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-1">
               {recentContacts.map((c) => (
-                <div key={c.id} className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-[#ddeef9] text-[#3c93d6] flex items-center justify-center font-semibold text-sm">
+                <div key={c.id} className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-50 transition-colors">
+                  <div className="w-9 h-9 rounded-full bg-[#ddeef9] text-[#3c93d6] flex items-center justify-center font-bold text-sm flex-shrink-0">
                     {c.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{c.name}</p>
-                    <p className="text-xs text-gray-500 truncate">{c.company || c.email}</p>
+                    <p className="text-sm font-semibold text-gray-900 truncate">{c.name}</p>
+                    <p className="text-xs text-gray-400 truncate">{c.company || c.email}</p>
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${CONTACT_STATUS_COLORS[c.status]}`}>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${CONTACT_STATUS_COLORS[c.status]}`}>
                     {CONTACT_STATUS_LABELS[c.status]}
                   </span>
                 </div>
@@ -211,20 +233,26 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <h2 className="font-semibold text-gray-900 mb-4">Próximos Follow-ups</h2>
+        {/* Follow-ups */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="w-1 h-4 rounded-full bg-orange-400 inline-block flex-shrink-0" />
+            Próximos Follow-ups
+          </h2>
           {upcomingFollowUps.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-6">No hay follow-ups pendientes</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-1">
               {upcomingFollowUps.map((a) => (
-                <div key={a.id} className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-orange-400 mt-1.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{a.contactName}</p>
-                    <p className="text-xs text-gray-500 truncate">{a.notes || a.type}</p>
+                <div key={a.id} className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-50 transition-colors">
+                  <div className="w-9 h-9 rounded-full bg-orange-50 text-orange-400 flex items-center justify-center flex-shrink-0">
+                    <Bell size={14} />
                   </div>
-                  <p className="text-xs text-gray-400 whitespace-nowrap">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{a.contactName}</p>
+                    <p className="text-xs text-gray-400 truncate">{a.notes || a.type}</p>
+                  </div>
+                  <p className="text-xs font-medium text-orange-500 whitespace-nowrap flex-shrink-0">
                     {a.nextFollowUp ? new Date(a.nextFollowUp + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "short" }) : "-"}
                   </p>
                 </div>
@@ -233,8 +261,12 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 xl:col-span-2">
-          <h2 className="font-semibold text-gray-900 mb-4">Deals por Etapa</h2>
+        {/* Deals por etapa */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 xl:col-span-2">
+          <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="w-1 h-4 rounded-full bg-purple-500 inline-block flex-shrink-0" />
+            Deals por Etapa
+          </h2>
           {deals.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-6">No hay deals registrados</p>
           ) : (
@@ -243,10 +275,10 @@ export default function DashboardPage() {
                 const count = deals.filter((d) => d.stage === stage).length;
                 const value = deals.filter((d) => d.stage === stage).reduce((s, d) => s + d.amount, 0);
                 return (
-                  <div key={stage} className="text-center p-3 bg-gray-50 rounded-lg">
-                    <p className="text-xs text-gray-500 mb-1">{label}</p>
-                    <p className="text-xl font-bold text-gray-900">{count}</p>
-                    <p className="text-xs text-gray-400">{formatCurrency(value)}</p>
+                  <div key={stage} className="text-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <p className="text-xs text-gray-500 mb-1 leading-snug">{label}</p>
+                    <p className="text-2xl font-bold text-gray-900">{count}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{formatCurrency(value)}</p>
                   </div>
                 );
               })}
@@ -254,55 +286,64 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Upcoming trips */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+        {/* Próximos viajes */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <CalendarCheck size={17} className="text-blue-500" /> Próximos Viajes
+            <CalendarCheck size={16} className="text-blue-500" />
+            Próximos Viajes
           </h2>
           {upcomingTrips.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-6">No hay viajes próximos</p>
           ) : (
-            <div className="space-y-3">
-              {upcomingTrips.map((v) => (
-                <div key={v.id} className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
-                    {new Date(v.checkIn + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "short" }).split(" ")[0]}
+            <div className="space-y-1">
+              {upcomingTrips.map((v) => {
+                const checkInDate = new Date(v.checkIn + "T12:00:00");
+                return (
+                  <div key={v.id} className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-50 transition-colors">
+                    <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex flex-col items-center justify-center flex-shrink-0 border border-blue-100">
+                      <span className="text-sm font-bold leading-none">{checkInDate.getDate()}</span>
+                      <span className="text-[10px] uppercase text-blue-400 leading-none mt-0.5">
+                        {checkInDate.toLocaleDateString("es-CL", { month: "short" })}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{v.contactName}</p>
+                      <p className="text-xs text-gray-400 truncate">{v.description || v.fileName}</p>
+                    </div>
+                    {v.checkOut && (
+                      <p className="text-xs text-gray-400 flex-shrink-0">→ {v.checkOut}</p>
+                    )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{v.contactName}</p>
-                    <p className="text-xs text-gray-400 truncate">{v.description || v.fileName}</p>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-xs font-semibold text-blue-600">{v.checkIn}</p>
-                    {v.checkOut && <p className="text-xs text-gray-400">→ {v.checkOut}</p>}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
         {/* Weekly KPIs */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <h2 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
-            <Target size={17} className="text-purple-500" /> Actividad esta semana
+            <Target size={16} className="text-purple-500" />
+            Actividad esta semana
           </h2>
           {!weekKPI ? (
             <p className="text-sm text-gray-400 text-center py-6">Sin registrar — ve a Marketing → KPIs</p>
           ) : (
-            <div className="space-y-3 mt-3">
+            <div className="space-y-4 mt-4">
               {KPI_SUMMARY.map(({ key, label, target }) => {
                 const value = Number(weekKPI[key]) || 0;
                 const pct = Math.min((value / target) * 100, 100);
-                const color = pct >= 100 ? "bg-green-500" : pct >= 60 ? "bg-blue-500" : pct >= 30 ? "bg-yellow-400" : "bg-gray-200";
+                const color = pct >= 100 ? "bg-emerald-500" : pct >= 60 ? "bg-[#3c93d6]" : pct >= 30 ? "bg-yellow-400" : "bg-gray-200";
                 return (
                   <div key={key}>
-                    <div className="flex justify-between text-xs text-gray-600 mb-1">
-                      <span>{label}</span>
-                      <span className="font-semibold">{value}/{target}</span>
+                    <div className="flex justify-between text-xs mb-1.5">
+                      <span className="font-medium text-gray-700">{label}</span>
+                      <span className={pct >= 100 ? "font-bold text-emerald-600" : "font-semibold text-gray-500"}>
+                        {value}<span className="text-gray-400 font-normal">/{target}</span>
+                      </span>
                     </div>
-                    <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div className={`h-1.5 rounded-full ${color}`} style={{ width: `${pct}%` }} />
+                    <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className={`h-2 rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
                     </div>
                   </div>
                 );
@@ -310,6 +351,7 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+
       </div>
     </div>
   );
