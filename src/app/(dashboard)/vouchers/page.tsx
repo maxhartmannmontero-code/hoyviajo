@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Upload, FileText, ExternalLink, X, Search, CalendarPlus, CalendarCheck, Loader2 } from "lucide-react";
+import { Upload, FileText, ExternalLink, X, Search, CalendarPlus, CalendarCheck, Loader2, Trash2 } from "lucide-react";
 import { Voucher, Contact } from "@/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -174,6 +174,7 @@ export default function VouchersPage() {
   const [search, setSearch] = useState("");
   const [addingCalendar, setAddingCalendar] = useState<string | null>(null);
   const [calendarSuccess, setCalendarSuccess] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   async function fetchData() {
     const [v, c] = await Promise.all([
@@ -186,6 +187,14 @@ export default function VouchersPage() {
   }
 
   useEffect(() => { fetchData(); }, []);
+
+  async function handleDelete(voucherId: string) {
+    if (!confirm("¿Eliminar este voucher? Se borrará el archivo de Drive y el evento de Calendar si existe.")) return;
+    setDeleting(voucherId);
+    await fetch(`/api/vouchers/${voucherId}`, { method: "DELETE" });
+    setDeleting(null);
+    await fetchData();
+  }
 
   async function handleAddToCalendar(voucherId: string) {
     setAddingCalendar(voucherId);
@@ -316,6 +325,11 @@ export default function VouchersPage() {
                         className="text-gray-400 hover:text-blue-600">
                         <ExternalLink size={16} />
                       </a>
+                      <button onClick={() => handleDelete(v.id)} disabled={deleting === v.id}
+                        title="Eliminar voucher"
+                        className="text-gray-300 hover:text-red-500 transition-colors disabled:opacity-50">
+                        {deleting === v.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                      </button>
                     </div>
                   </div>
 

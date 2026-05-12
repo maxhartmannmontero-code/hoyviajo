@@ -236,6 +236,20 @@ export async function setVoucherCalendarEvent(
   ]);
 }
 
+export async function deleteVoucher(accessToken: string, id: string): Promise<{ driveFileId: string; calendarEventId: string }> {
+  const sheets = getSheets(accessToken);
+  const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
+  const sheet = spreadsheet.data.sheets?.find((s) => s.properties?.title === "Vouchers");
+  const sheetId = sheet?.properties?.sheetId;
+  if (sheetId == null) throw new Error("Vouchers sheet not found");
+  const rows = await readSheet(accessToken, "Vouchers!A2:N");
+  const rowIndex = rows.findIndex((r) => r[0] === id);
+  if (rowIndex === -1) throw new Error("Voucher not found");
+  const v = rowToVoucher(rows[rowIndex]);
+  await deleteRow(accessToken, sheetId, rowIndex + 2, "Vouchers");
+  return { driveFileId: v.driveFileId, calendarEventId: v.calendarEventId };
+}
+
 // ─── Campaigns ─────────────────────────────────────────────────────────────
 
 function rowToCampaign(row: string[]): Campaign {
