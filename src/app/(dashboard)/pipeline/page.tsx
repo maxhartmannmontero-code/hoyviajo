@@ -20,7 +20,7 @@ function DealModal({
     contactId: "",
     dealName: "",
     amount: "",
-    currency: "USD",
+    currency: "CLP",
     stage: "lead" as DealStage,
     probability: "50",
     closeDate: "",

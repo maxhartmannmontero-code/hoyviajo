@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, TrendingUp, Bell, DollarSign, UserPlus, CheckCircle, Receipt, TrendingDown } from "lucide-react";
-import { Contact, Activity, Deal, Sale, Expense } from "@/types";
+import { Users, TrendingUp, Bell, DollarSign, UserPlus, CheckCircle, CalendarCheck, Target } from "lucide-react";
+import { Contact, Activity, Deal, Sale, Expense, Voucher, WeeklyKPI } from "@/types";
 import { formatCurrency, CONTACT_STATUS_COLORS, CONTACT_STATUS_LABELS, DEAL_STAGE_LABELS } from "@/lib/utils";
 
 const fmtCLP = (n: number) =>
@@ -35,6 +35,8 @@ export default function DashboardPage() {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [kpis, setKpis] = useState<WeeklyKPI[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,12 +46,16 @@ export default function DashboardPage() {
       fetch("/api/deals").then((r) => r.ok ? r.json() : []),
       fetch("/api/sales").then((r) => r.ok ? r.json() : []),
       fetch("/api/expenses").then((r) => r.ok ? r.json() : []),
-    ]).then(([c, a, d, s, e]) => {
+      fetch("/api/vouchers").then((r) => r.ok ? r.json() : []),
+      fetch("/api/kpis").then((r) => r.ok ? r.json() : []),
+    ]).then(([c, a, d, s, e, v, k]) => {
       setContacts(Array.isArray(c) ? c : []);
       setActivities(Array.isArray(a) ? a : []);
       setDeals(Array.isArray(d) ? d : []);
       setSales(Array.isArray(s) ? s : []);
       setExpenses(Array.isArray(e) ? e : []);
+      setVouchers(Array.isArray(v) ? v : []);
+      setKpis(Array.isArray(k) ? k : []);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -83,6 +89,27 @@ export default function DashboardPage() {
     .filter((a) => a.status === "pendiente" && a.nextFollowUp)
     .sort((a, b) => a.nextFollowUp.localeCompare(b.nextFollowUp))
     .slice(0, 5);
+
+  const today = now.toISOString().slice(0, 10);
+  const upcomingTrips = vouchers
+    .filter((v) => v.checkIn && v.checkIn >= today)
+    .sort((a, b) => a.checkIn.localeCompare(b.checkIn))
+    .slice(0, 4);
+
+  // Current week KPIs
+  const weekStart = (() => {
+    const d = new Date(now);
+    const day = d.getDay();
+    d.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
+    return d.toISOString().slice(0, 10);
+  })();
+  const weekKPI = kpis.find((k) => k.weekStart === weekStart);
+  const KPI_SUMMARY = [
+    { key: "bni11s" as keyof WeeklyKPI,       label: "BNI 1-a-1s",   target: 8  },
+    { key: "cotizaciones" as keyof WeeklyKPI, label: "Cotizaciones", target: 3  },
+    { key: "cierres" as keyof WeeklyKPI,      label: "Cierres",      target: 1  },
+    { key: "presenciales" as keyof WeeklyKPI, label: "Presenciales", target: 5  },
+  ];
 
   if (loading) {
     return (
@@ -198,7 +225,7 @@ export default function DashboardPage() {
                     <p className="text-xs text-gray-500 truncate">{a.notes || a.type}</p>
                   </div>
                   <p className="text-xs text-gray-400 whitespace-nowrap">
-                    {a.nextFollowUp ? new Date(a.nextFollowUp).toLocaleDateString("es-PE", { day: "2-digit", month: "short" }) : "-"}
+                    {a.nextFollowUp ? new Date(a.nextFollowUp + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "short" }) : "-"}
                   </p>
                 </div>
               ))}
@@ -220,6 +247,63 @@ export default function DashboardPage() {
                     <p className="text-xs text-gray-500 mb-1">{label}</p>
                     <p className="text-xl font-bold text-gray-900">{count}</p>
                     <p className="text-xs text-gray-400">{formatCurrency(value)}</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Upcoming trips */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <CalendarCheck size={17} className="text-blue-500" /> Próximos Viajes
+          </h2>
+          {upcomingTrips.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-6">No hay viajes próximos</p>
+          ) : (
+            <div className="space-y-3">
+              {upcomingTrips.map((v) => (
+                <div key={v.id} className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                    {new Date(v.checkIn + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "short" }).split(" ")[0]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{v.contactName}</p>
+                    <p className="text-xs text-gray-400 truncate">{v.description || v.fileName}</p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-xs font-semibold text-blue-600">{v.checkIn}</p>
+                    {v.checkOut && <p className="text-xs text-gray-400">→ {v.checkOut}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Weekly KPIs */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <h2 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+            <Target size={17} className="text-purple-500" /> Actividad esta semana
+          </h2>
+          {!weekKPI ? (
+            <p className="text-sm text-gray-400 text-center py-6">Sin registrar — ve a Marketing → KPIs</p>
+          ) : (
+            <div className="space-y-3 mt-3">
+              {KPI_SUMMARY.map(({ key, label, target }) => {
+                const value = Number(weekKPI[key]) || 0;
+                const pct = Math.min((value / target) * 100, 100);
+                const color = pct >= 100 ? "bg-green-500" : pct >= 60 ? "bg-blue-500" : pct >= 30 ? "bg-yellow-400" : "bg-gray-200";
+                return (
+                  <div key={key}>
+                    <div className="flex justify-between text-xs text-gray-600 mb-1">
+                      <span>{label}</span>
+                      <span className="font-semibold">{value}/{target}</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className={`h-1.5 rounded-full ${color}`} style={{ width: `${pct}%` }} />
+                    </div>
                   </div>
                 );
               })}
