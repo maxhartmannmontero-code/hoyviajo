@@ -15,10 +15,10 @@ export default function SignInPage() {
         <img src="/400x200.png" alt="Hoy Viajo" className="h-14 w-auto object-contain mb-10" />
 
         {/* Hero text */}
-        <h1 className="text-6xl font-black text-white tracking-tight leading-none mb-3">
+        <h1 className="text-2xl font-black text-white tracking-tight leading-none mb-2">
           HOY GANO
         </h1>
-        <p className="text-[#3c93d6] text-sm font-semibold uppercase tracking-[0.3em] mb-12">
+        <p className="text-[#3c93d6] text-base font-semibold uppercase tracking-[0.3em] mb-12">
           un CRM de Hoy Viajo
         </p>
 
