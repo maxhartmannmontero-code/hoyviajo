@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, TrendingUp, Bell, DollarSign, UserPlus, CheckCircle, CalendarCheck, Target } from "lucide-react";
+import { Users, TrendingUp, Bell, DollarSign, UserPlus, CheckCircle, CalendarCheck, Target, Globe, Trophy } from "lucide-react";
 import { Contact, Activity, Deal, Sale, Expense, Voucher, WeeklyKPI } from "@/types";
-import { formatCurrency, CONTACT_STATUS_COLORS, CONTACT_STATUS_LABELS, DEAL_STAGE_LABELS } from "@/lib/utils";
+import { formatCurrency, CONTACT_STATUS_COLORS, CONTACT_STATUS_LABELS } from "@/lib/utils";
+
+const META = 4_000_000;
 
 const fmtCLP = (n: number) =>
   new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(n);
@@ -39,6 +41,7 @@ export default function DashboardPage() {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [kpis, setKpis] = useState<WeeklyKPI[]>([]);
   const [loading, setLoading] = useState(true);
+  const [gaData, setGaData] = useState<{ sessions: number; users: number } | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -61,6 +64,22 @@ export default function DashboardPage() {
     }).catch(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    const now = new Date();
+    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const start = `${thisMonth}-01`;
+    const end = now.toISOString().slice(0, 10);
+    fetch(`/api/analytics?start=${start}&end=${end}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const row = data.find((d) => d.month === thisMonth);
+          if (row) setGaData({ sessions: Math.round(row.sessions), users: Math.round(row.activeUsers) });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const now = new Date();
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const newThisMonth = contacts.filter((c) => c.createdAt?.startsWith(thisMonth)).length;
@@ -80,6 +99,23 @@ export default function DashboardPage() {
   const closedWon = deals.filter((d) => d.stage === "cerrado_ganado");
   const totalRevenue = closedWon.reduce((s, d) => s + d.amount, 0);
   const pipeline = activeDeals.reduce((s, d) => s + d.amount * (d.probability / 100), 0);
+
+  // Meta calculations
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const daysPassed = now.getDate();
+  const daysLeft = daysInMonth - daysPassed;
+  const metaPct = Math.min((monthNet / META) * 100, 100);
+  const expectedPct = (daysPassed / daysInMonth) * 100;
+  const onTrack = metaPct >= expectedPct;
+  const remaining = Math.max(META - monthNet, 0);
+  const dailyNeeded = daysLeft > 0 ? remaining / daysLeft : 0;
+  const projected = daysPassed > 0 ? (monthNet / daysPassed) * daysInMonth : 0;
+
+  // Deals closing this month
+  const closingThisMonth = activeDeals
+    .filter((d) => d.closeDate?.startsWith(thisMonth))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 4);
 
   const recentContacts = [...contacts]
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
@@ -122,12 +158,61 @@ export default function DashboardPage() {
     <div className="p-6 lg:p-8 min-h-full bg-slate-50/60">
 
       {/* ── Header ── */}
-      <div className="mb-8">
+      <div className="mb-6">
         <p className="text-xs font-semibold text-[#3c93d6] uppercase tracking-widest mb-1.5">
           {now.toLocaleDateString("es-CL", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
         </p>
         <h1 className="text-3xl font-bold text-gray-900 leading-tight">Dashboard</h1>
         <p className="text-gray-400 text-sm mt-1">Resumen general · Hoy Viajo CRM</p>
+      </div>
+
+      {/* ── META HERO ── */}
+      <div className="mb-6 bg-gradient-to-r from-[#0f2744] to-[#1a4a7a] rounded-2xl p-6 shadow-xl">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <p className="text-xs font-semibold text-blue-300 uppercase tracking-widest mb-1">
+              Meta mensual · {now.toLocaleDateString("es-CL", { month: "long", year: "numeric" })}
+            </p>
+            <div className="flex items-end gap-3">
+              <span className="text-4xl font-bold text-white">{fmtCLP(monthNet)}</span>
+              <span className="text-blue-300 text-lg mb-1">/ {fmtCLP(META)}</span>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${onTrack ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
+              <div className={`w-1.5 h-1.5 rounded-full ${onTrack ? "bg-emerald-400" : "bg-red-400"}`} />
+              {onTrack ? "En ritmo" : "Por debajo"}
+            </div>
+            <p className="text-blue-300 text-xs mt-2">{daysLeft} días restantes</p>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden mb-4">
+          <div
+            className={`h-3 rounded-full transition-all ${metaPct >= 100 ? "bg-emerald-400" : metaPct >= 75 ? "bg-[#3c93d6]" : metaPct >= 50 ? "bg-yellow-400" : metaPct >= 25 ? "bg-orange-400" : "bg-red-400"}`}
+            style={{ width: `${Math.max(metaPct, 2)}%` }}
+          />
+        </div>
+
+        <div className="grid grid-cols-4 gap-4">
+          <div>
+            <p className="text-xs text-blue-300 mb-0.5">Avance</p>
+            <p className="text-lg font-bold text-white">{metaPct.toFixed(0)}%</p>
+          </div>
+          <div>
+            <p className="text-xs text-blue-300 mb-0.5">Falta</p>
+            <p className="text-lg font-bold text-white">{remaining > 0 ? fmtCLP(remaining) : "¡Meta lograda!"}</p>
+          </div>
+          <div>
+            <p className="text-xs text-blue-300 mb-0.5">Necesario/día</p>
+            <p className="text-lg font-bold text-white">{dailyNeeded > 0 ? fmtCLP(dailyNeeded) : "—"}</p>
+          </div>
+          <div>
+            <p className="text-xs text-blue-300 mb-0.5">Proyección</p>
+            <p className={`text-lg font-bold ${projected >= META ? "text-emerald-300" : "text-orange-300"}`}>{fmtCLP(projected)}</p>
+          </div>
+        </div>
       </div>
 
       {/* ── KPI cards ── */}
@@ -163,11 +248,12 @@ export default function DashboardPage() {
           iconBg="bg-emerald-50"
         />
         <StatCard
-          icon={<UserPlus size={18} className="text-cyan-600" />}
-          label="Nuevos este Mes"
-          value={newThisMonth}
-          accent="border-l-cyan-500"
-          iconBg="bg-cyan-50"
+          icon={<Trophy size={18} className="text-yellow-600" />}
+          label="Comisiones del Mes"
+          value={fmtCLP(monthCommissions)}
+          sub={`Gastos: ${fmtCLP(monthExpTotal)}`}
+          accent="border-l-yellow-400"
+          iconBg="bg-yellow-50"
         />
         <StatCard
           icon={<DollarSign size={18} className="text-green-600" />}
@@ -179,31 +265,90 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* ── Financial snapshot ── */}
-      <div className="mb-8 bg-gradient-to-r from-[#1a3a5c] to-[#2d6da3] rounded-2xl p-6 shadow-lg">
-        <p className="text-xs font-semibold text-blue-300 uppercase tracking-widest mb-5">
-          Resultado financiero · {now.toLocaleDateString("es-CL", { month: "long", year: "numeric" })}
-        </p>
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <p className="text-xs text-blue-300 mb-1">Comisiones</p>
-            <p className="text-2xl font-bold text-green-300">{fmtCLP(monthCommissions)}</p>
-          </div>
-          <div className="border-x border-white/20 px-4">
-            <p className="text-xs text-blue-300 mb-1">Gastos registrados</p>
-            <p className="text-2xl font-bold text-red-300">{fmtCLP(monthExpTotal)}</p>
-          </div>
-          <div className="pl-4">
-            <p className="text-xs text-blue-300 mb-1">Resultado neto</p>
-            <p className={`text-2xl font-bold ${monthNet >= 0 ? "text-emerald-300" : "text-red-300"}`}>
-              {fmtCLP(monthNet)}
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* ── Bottom grid ── */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+        {/* Deals cerrando este mes */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="w-1 h-4 rounded-full bg-purple-500 inline-block flex-shrink-0" />
+            Deals cerrando este mes
+          </h2>
+          {closingThisMonth.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-6">No hay deals con cierre este mes</p>
+          ) : (
+            <div className="space-y-2">
+              {closingThisMonth.map((d) => (
+                <div key={d.id} className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-50 transition-colors">
+                  <div className="w-2 h-2 rounded-full bg-purple-400 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{d.dealName}</p>
+                    <p className="text-xs text-gray-400 truncate">{d.contactName}</p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-sm font-bold text-purple-600">{formatCurrency(d.amount, d.currency)}</p>
+                    <p className="text-xs text-gray-400">{d.probability}% prob.</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Follow-ups + GA4 */}
+        <div className="flex flex-col gap-4">
+          {/* GA4 mini */}
+          <div className={`rounded-2xl border p-4 flex items-center gap-4 ${gaData ? "bg-white border-gray-100 shadow-sm" : "bg-slate-50 border-dashed border-slate-200"}`}>
+            <div className={`p-2.5 rounded-xl flex-shrink-0 ${gaData ? "bg-blue-50" : "bg-slate-100"}`}>
+              <Globe size={18} className={gaData ? "text-blue-500" : "text-slate-400"} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Visitas web este mes</p>
+              {gaData ? (
+                <div className="flex items-end gap-4 mt-1">
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900 leading-none">{gaData.sessions.toLocaleString("es-CL")}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">sesiones</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900 leading-none">{gaData.users.toLocaleString("es-CL")}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">usuarios</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400 mt-1">Sin datos GA4 aún</p>
+              )}
+            </div>
+          </div>
+
+          {/* Follow-ups */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex-1">
+            <h2 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <span className="w-1 h-4 rounded-full bg-orange-400 inline-block flex-shrink-0" />
+              Próximos Follow-ups
+            </h2>
+            {upcomingFollowUps.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-4">No hay follow-ups pendientes</p>
+            ) : (
+              <div className="space-y-1">
+                {upcomingFollowUps.map((a) => (
+                  <div key={a.id} className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-50 transition-colors">
+                    <div className="w-9 h-9 rounded-full bg-orange-50 text-orange-400 flex items-center justify-center flex-shrink-0">
+                      <Bell size={14} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{a.contactName}</p>
+                      <p className="text-xs text-gray-400 truncate">{a.notes || a.type}</p>
+                    </div>
+                    <p className="text-xs font-medium text-orange-500 whitespace-nowrap flex-shrink-0">
+                      {a.nextFollowUp ? new Date(a.nextFollowUp + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "short" }) : "-"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Contactos recientes */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
@@ -233,123 +378,71 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Follow-ups */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <span className="w-1 h-4 rounded-full bg-orange-400 inline-block flex-shrink-0" />
-            Próximos Follow-ups
-          </h2>
-          {upcomingFollowUps.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-6">No hay follow-ups pendientes</p>
-          ) : (
-            <div className="space-y-1">
-              {upcomingFollowUps.map((a) => (
-                <div key={a.id} className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-50 transition-colors">
-                  <div className="w-9 h-9 rounded-full bg-orange-50 text-orange-400 flex items-center justify-center flex-shrink-0">
-                    <Bell size={14} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{a.contactName}</p>
-                    <p className="text-xs text-gray-400 truncate">{a.notes || a.type}</p>
-                  </div>
-                  <p className="text-xs font-medium text-orange-500 whitespace-nowrap flex-shrink-0">
-                    {a.nextFollowUp ? new Date(a.nextFollowUp + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "short" }) : "-"}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* Próximos viajes + KPIs */}
+        <div className="flex flex-col gap-4">
+          {/* Trips */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <h2 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <CalendarCheck size={16} className="text-blue-500" />
+              Próximos Viajes
+            </h2>
+            {upcomingTrips.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-4">No hay viajes próximos</p>
+            ) : (
+              <div className="space-y-1">
+                {upcomingTrips.map((v) => {
+                  const checkInDate = new Date(v.checkIn + "T12:00:00");
+                  return (
+                    <div key={v.id} className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-50 transition-colors">
+                      <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex flex-col items-center justify-center flex-shrink-0 border border-blue-100">
+                        <span className="text-sm font-bold leading-none">{checkInDate.getDate()}</span>
+                        <span className="text-[10px] uppercase text-blue-400 leading-none mt-0.5">
+                          {checkInDate.toLocaleDateString("es-CL", { month: "short" })}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{v.contactName}</p>
+                        <p className="text-xs text-gray-400 truncate">{v.description || v.fileName}</p>
+                      </div>
+                      {v.checkOut && <p className="text-xs text-gray-400 flex-shrink-0">→ {v.checkOut}</p>}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
-        {/* Deals por etapa */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 xl:col-span-2">
-          <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <span className="w-1 h-4 rounded-full bg-purple-500 inline-block flex-shrink-0" />
-            Deals por Etapa
-          </h2>
-          {deals.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-6">No hay deals registrados</p>
-          ) : (
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-              {Object.entries(DEAL_STAGE_LABELS).map(([stage, label]) => {
-                const count = deals.filter((d) => d.stage === stage).length;
-                const value = deals.filter((d) => d.stage === stage).reduce((s, d) => s + d.amount, 0);
-                return (
-                  <div key={stage} className="text-center p-3 bg-slate-50 rounded-xl border border-slate-100">
-                    <p className="text-xs text-gray-500 mb-1 leading-snug">{label}</p>
-                    <p className="text-2xl font-bold text-gray-900">{count}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{formatCurrency(value)}</p>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Próximos viajes */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <CalendarCheck size={16} className="text-blue-500" />
-            Próximos Viajes
-          </h2>
-          {upcomingTrips.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-6">No hay viajes próximos</p>
-          ) : (
-            <div className="space-y-1">
-              {upcomingTrips.map((v) => {
-                const checkInDate = new Date(v.checkIn + "T12:00:00");
-                return (
-                  <div key={v.id} className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-50 transition-colors">
-                    <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex flex-col items-center justify-center flex-shrink-0 border border-blue-100">
-                      <span className="text-sm font-bold leading-none">{checkInDate.getDate()}</span>
-                      <span className="text-[10px] uppercase text-blue-400 leading-none mt-0.5">
-                        {checkInDate.toLocaleDateString("es-CL", { month: "short" })}
-                      </span>
+          {/* Weekly KPIs */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <h2 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+              <Target size={16} className="text-purple-500" />
+              Actividad esta semana
+            </h2>
+            {!weekKPI ? (
+              <p className="text-sm text-gray-400 text-center py-4">Sin registrar — ve a Marketing → KPIs</p>
+            ) : (
+              <div className="space-y-3 mt-3">
+                {KPI_SUMMARY.map(({ key, label, target }) => {
+                  const value = Number(weekKPI[key]) || 0;
+                  const pct = Math.min((value / target) * 100, 100);
+                  const color = pct >= 100 ? "bg-emerald-500" : pct >= 60 ? "bg-[#3c93d6]" : pct >= 30 ? "bg-yellow-400" : "bg-gray-200";
+                  return (
+                    <div key={key}>
+                      <div className="flex justify-between text-xs mb-1.5">
+                        <span className="font-medium text-gray-700">{label}</span>
+                        <span className={pct >= 100 ? "font-bold text-emerald-600" : "font-semibold text-gray-500"}>
+                          {value}<span className="text-gray-400 font-normal">/{target}</span>
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div className={`h-2 rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{v.contactName}</p>
-                      <p className="text-xs text-gray-400 truncate">{v.description || v.fileName}</p>
-                    </div>
-                    {v.checkOut && (
-                      <p className="text-xs text-gray-400 flex-shrink-0">→ {v.checkOut}</p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Weekly KPIs */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <h2 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
-            <Target size={16} className="text-purple-500" />
-            Actividad esta semana
-          </h2>
-          {!weekKPI ? (
-            <p className="text-sm text-gray-400 text-center py-6">Sin registrar — ve a Marketing → KPIs</p>
-          ) : (
-            <div className="space-y-4 mt-4">
-              {KPI_SUMMARY.map(({ key, label, target }) => {
-                const value = Number(weekKPI[key]) || 0;
-                const pct = Math.min((value / target) * 100, 100);
-                const color = pct >= 100 ? "bg-emerald-500" : pct >= 60 ? "bg-[#3c93d6]" : pct >= 30 ? "bg-yellow-400" : "bg-gray-200";
-                return (
-                  <div key={key}>
-                    <div className="flex justify-between text-xs mb-1.5">
-                      <span className="font-medium text-gray-700">{label}</span>
-                      <span className={pct >= 100 ? "font-bold text-emerald-600" : "font-semibold text-gray-500"}>
-                        {value}<span className="text-gray-400 font-normal">/{target}</span>
-                      </span>
-                    </div>
-                    <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div className={`h-2 rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
       </div>
