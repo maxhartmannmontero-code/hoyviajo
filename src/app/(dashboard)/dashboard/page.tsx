@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, TrendingUp, Bell, DollarSign, UserPlus, CheckCircle, CalendarCheck, Target, Globe, Trophy } from "lucide-react";
+import { Users, TrendingUp, Bell, DollarSign, UserPlus, CheckCircle, CalendarCheck, Target, Globe, Trophy, Eye, EyeOff } from "lucide-react";
 import { Contact, Activity, Deal, Sale, Expense, Voucher, WeeklyKPI } from "@/types";
 import { formatCurrency, CONTACT_STATUS_COLORS, CONTACT_STATUS_LABELS } from "@/lib/utils";
 
@@ -42,6 +42,8 @@ export default function DashboardPage() {
   const [kpis, setKpis] = useState<WeeklyKPI[]>([]);
   const [loading, setLoading] = useState(true);
   const [gaData, setGaData] = useState<{ sessions: number; users: number } | null>(null);
+  const [masked, setMasked] = useState(false);
+  const hide = (v: string) => masked ? "••••••" : v;
 
   useEffect(() => {
     Promise.all([
@@ -158,12 +160,21 @@ export default function DashboardPage() {
     <div className="p-6 lg:p-8 min-h-full bg-slate-50/60">
 
       {/* ── Header ── */}
-      <div className="mb-6">
-        <p className="text-xs font-semibold text-[#3c93d6] uppercase tracking-widest mb-1.5">
-          {now.toLocaleDateString("es-CL", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-        </p>
-        <h1 className="text-3xl font-bold text-gray-900 leading-tight">Dashboard</h1>
-        <p className="text-gray-400 text-sm mt-1">Resumen general · Hoy Viajo CRM</p>
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <p className="text-xs font-semibold text-[#3c93d6] uppercase tracking-widest mb-1.5">
+            {now.toLocaleDateString("es-CL", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+          </p>
+          <h1 className="text-3xl font-bold text-gray-900 leading-tight">Dashboard</h1>
+          <p className="text-gray-400 text-sm mt-1">Resumen general · Hoy Viajo CRM</p>
+        </div>
+        <button
+          onClick={() => setMasked((v) => !v)}
+          className={`mt-1 flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition-colors ${masked ? "bg-gray-100 border-gray-200 text-gray-500" : "border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300"}`}
+        >
+          {masked ? <EyeOff size={15} /> : <Eye size={15} />}
+          {masked ? "Mostrar" : "Ocultar"}
+        </button>
       </div>
 
       {/* ── META HERO ── */}
@@ -174,8 +185,8 @@ export default function DashboardPage() {
               Meta mensual · {now.toLocaleDateString("es-CL", { month: "long", year: "numeric" })}
             </p>
             <div className="flex items-end gap-3">
-              <span className="text-4xl font-bold text-white">{fmtCLP(monthNet)}</span>
-              <span className="text-blue-300 text-lg mb-1">/ {fmtCLP(META)}</span>
+              <span className="text-4xl font-bold text-white">{hide(fmtCLP(monthNet))}</span>
+              <span className="text-blue-300 text-lg mb-1">/ {hide(fmtCLP(META))}</span>
             </div>
           </div>
           <div className="text-right">
@@ -198,19 +209,19 @@ export default function DashboardPage() {
         <div className="grid grid-cols-4 gap-4">
           <div>
             <p className="text-xs text-blue-300 mb-0.5">Avance</p>
-            <p className="text-lg font-bold text-white">{metaPct.toFixed(0)}%</p>
+            <p className="text-lg font-bold text-white">{masked ? "••%" : `${metaPct.toFixed(0)}%`}</p>
           </div>
           <div>
             <p className="text-xs text-blue-300 mb-0.5">Falta</p>
-            <p className="text-lg font-bold text-white">{remaining > 0 ? fmtCLP(remaining) : "¡Meta lograda!"}</p>
+            <p className="text-lg font-bold text-white">{remaining > 0 ? hide(fmtCLP(remaining)) : "¡Meta lograda!"}</p>
           </div>
           <div>
             <p className="text-xs text-blue-300 mb-0.5">Necesario/día</p>
-            <p className="text-lg font-bold text-white">{dailyNeeded > 0 ? fmtCLP(dailyNeeded) : "—"}</p>
+            <p className="text-lg font-bold text-white">{dailyNeeded > 0 ? hide(fmtCLP(dailyNeeded)) : "—"}</p>
           </div>
           <div>
             <p className="text-xs text-blue-300 mb-0.5">Proyección</p>
-            <p className={`text-lg font-bold ${projected >= META ? "text-emerald-300" : "text-orange-300"}`}>{fmtCLP(projected)}</p>
+            <p className={`text-lg font-bold ${projected >= META ? "text-emerald-300" : "text-orange-300"}`}>{hide(fmtCLP(projected))}</p>
           </div>
         </div>
       </div>
@@ -229,7 +240,7 @@ export default function DashboardPage() {
           icon={<TrendingUp size={18} className="text-purple-600" />}
           label="Deals Activos"
           value={activeDeals.length}
-          sub={`Pipeline: ${formatCurrency(pipeline)}`}
+          sub={`Pipeline: ${hide(formatCurrency(pipeline))}`}
           accent="border-l-purple-500"
           iconBg="bg-purple-50"
         />
@@ -250,15 +261,15 @@ export default function DashboardPage() {
         <StatCard
           icon={<Trophy size={18} className="text-yellow-600" />}
           label="Comisiones del Mes"
-          value={fmtCLP(monthCommissions)}
-          sub={`Gastos: ${fmtCLP(monthExpTotal)}`}
+          value={hide(fmtCLP(monthCommissions))}
+          sub={`Gastos: ${hide(fmtCLP(monthExpTotal))}`}
           accent="border-l-yellow-400"
           iconBg="bg-yellow-50"
         />
         <StatCard
           icon={<DollarSign size={18} className="text-green-600" />}
           label="Deals Cerrados"
-          value={formatCurrency(totalRevenue)}
+          value={hide(formatCurrency(totalRevenue))}
           sub={`${closedWon.length} ganados`}
           accent="border-l-green-500"
           iconBg="bg-green-50"
@@ -286,7 +297,7 @@ export default function DashboardPage() {
                     <p className="text-xs text-gray-400 truncate">{d.contactName}</p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-bold text-purple-600">{formatCurrency(d.amount, d.currency)}</p>
+                    <p className="text-sm font-bold text-purple-600">{hide(formatCurrency(d.amount, d.currency))}</p>
                     <p className="text-xs text-gray-400">{d.probability}% prob.</p>
                   </div>
                 </div>
