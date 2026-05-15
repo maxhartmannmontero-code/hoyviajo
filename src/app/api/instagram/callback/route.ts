@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     </body></html>`, { headers: { "Content-Type": "text/html" } });
   }
 
-  const appId = process.env.META_APP_ID!;
+  const appId = process.env.META_APP_ID || "285485288214120";
   const appSecret = process.env.META_APP_SECRET!;
 
   // Exchange code for user access token
