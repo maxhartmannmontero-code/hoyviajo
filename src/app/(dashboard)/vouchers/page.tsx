@@ -36,9 +36,27 @@ function UploadModal({
     e.preventDefault();
     if (!file || !resolvedName) return;
     setUploading(true);
+
+    let contactId = isNew ? "" : form.contactId;
+    if (isNew && form.newContactName.trim()) {
+      const res = await fetch("/api/contacts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.newContactName.trim(),
+          email: "", phone: "", company: "", role: "",
+          tags: [], status: "prospecto", source: "voucher", notes: "",
+        }),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        contactId = created.id ?? "";
+      }
+    }
+
     const fd = new FormData();
     fd.append("file", file);
-    fd.append("contactId", isNew ? "" : form.contactId);
+    fd.append("contactId", contactId);
     fd.append("contactName", resolvedName);
     fd.append("amount", form.amount);
     fd.append("currency", form.currency);
