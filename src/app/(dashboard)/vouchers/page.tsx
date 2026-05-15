@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Upload, FileText, ExternalLink, X, Search, CalendarPlus, CalendarCheck, Loader2, Trash2 } from "lucide-react";
+import { Upload, FileText, ExternalLink, X, Search, CalendarPlus, CalendarCheck, Loader2, Trash2, Pencil } from "lucide-react";
 import { Voucher, Contact } from "@/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -199,6 +199,102 @@ function UploadModal({
   );
 }
 
+function EditModal({
+  voucher,
+  onClose,
+  onSave,
+}: {
+  voucher: Voucher;
+  onClose: () => void;
+  onSave: () => void;
+}) {
+  const [form, setForm] = useState({
+    date: voucher.date ?? "",
+    description: voucher.description ?? "",
+    notes: voucher.notes ?? "",
+    checkIn: voucher.checkIn ?? "",
+    checkOut: voucher.checkOut ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    await fetch(`/api/vouchers/${voucher.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    setSaving(false);
+    onSave();
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-5 border-b sticky top-0 bg-white">
+          <div>
+            <h2 className="font-semibold text-gray-900">Editar Voucher</h2>
+            <p className="text-xs text-gray-400 mt-0.5">{voucher.fileName} · {voucher.contactName}</p>
+          </div>
+          <button onClick={onClose}><X size={20} className="text-gray-400" /></button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div>
+            <label className="text-xs font-medium text-gray-700 block mb-1">Fecha del voucher</label>
+            <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-gray-700 block mb-1">Descripción del viaje</label>
+            <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder="Ej: Vuelo Santiago → Cancún"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-gray-700 block mb-1">Comentarios</label>
+            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              rows={3} placeholder="Ej: Incluye traslados, seguro de viaje, etc."
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+          </div>
+
+          <div className="bg-blue-50 rounded-xl p-4 space-y-3">
+            <div className="flex items-center gap-2 mb-1">
+              <CalendarPlus size={15} className="text-blue-600" />
+              <p className="text-xs font-semibold text-blue-700">Fechas del viaje</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-blue-600 block mb-1">Check-in / Salida</label>
+                <input type="date" value={form.checkIn}
+                  onChange={(e) => setForm({ ...form, checkIn: e.target.value })}
+                  className="w-full border border-blue-200 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="text-xs text-blue-600 block mb-1">Check-out / Regreso</label>
+                <input type="date" value={form.checkOut}
+                  onChange={(e) => setForm({ ...form, checkOut: e.target.value })}
+                  className="w-full border border-blue-200 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600">Cancelar</button>
+            <button type="submit" disabled={saving}
+              className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50">
+              {saving ? "Guardando..." : "Guardar cambios"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function VouchersPage() {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -208,6 +304,7 @@ export default function VouchersPage() {
   const [addingCalendar, setAddingCalendar] = useState<string | null>(null);
   const [calendarSuccess, setCalendarSuccess] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [editingVoucher, setEditingVoucher] = useState<Voucher | null>(null);
 
   async function fetchData() {
     const [v, c] = await Promise.all([
@@ -358,6 +455,11 @@ export default function VouchersPage() {
                         className="text-gray-400 hover:text-blue-600">
                         <ExternalLink size={16} />
                       </a>
+                      <button onClick={() => setEditingVoucher(v)}
+                        title="Editar voucher"
+                        className="text-gray-300 hover:text-blue-600 transition-colors">
+                        <Pencil size={16} />
+                      </button>
                       <button onClick={() => handleDelete(v.id)} disabled={deleting === v.id}
                         title="Eliminar voucher"
                         className="text-gray-300 hover:text-red-500 transition-colors disabled:opacity-50">
@@ -389,6 +491,7 @@ export default function VouchersPage() {
       )}
 
       {showModal && <UploadModal contacts={contacts} onClose={() => setShowModal(false)} onSave={fetchData} />}
+      {editingVoucher && <EditModal voucher={editingVoucher} onClose={() => setEditingVoucher(null)} onSave={fetchData} />}
     </div>
   );
 }
