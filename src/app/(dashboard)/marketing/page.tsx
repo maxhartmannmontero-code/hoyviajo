@@ -231,6 +231,7 @@ function DashboardTab({ metrics, onRefresh }: { metrics: MktMetrics[]; onRefresh
   const [gaByMonth, setGaByMonth] = useState<Record<string, GAMonthlyData>>({});
   const [gaConfigured, setGaConfigured] = useState(true);
   const [gaLoading, setGaLoading] = useState(true);
+  const [gaError, setGaError] = useState<string | null>(null);
   const [igData, setIgData] = useState<InstagramMonthlyData | null>(null);
   const [igConfigured, setIgConfigured] = useState(true);
   const [igLoading, setIgLoading] = useState(true);
@@ -243,13 +244,15 @@ function DashboardTab({ metrics, onRefresh }: { metrics: MktMetrics[]; onRefresh
       .then((r) => r.json())
       .then((data) => {
         if (data?.error === "not_configured") { setGaConfigured(false); return; }
+        if (data?.error) { setGaError(data.error); return; }
         if (Array.isArray(data)) {
           const map: Record<string, GAMonthlyData> = {};
           for (const row of data) map[row.month] = row;
           setGaByMonth(map);
+          if (Object.keys(map).length === 0) setGaError("Sin datos en el período — GA4 puede ser nuevo o sin tráfico aún");
         }
       })
-      .catch(() => {})
+      .catch((e) => setGaError(String(e)))
       .finally(() => setGaLoading(false));
 
     fetch("/api/instagram")
@@ -285,6 +288,11 @@ function DashboardTab({ metrics, onRefresh }: { metrics: MktMetrics[]; onRefresh
           {gaConfigured && !gaLoading && Object.keys(gaByMonth).length > 0 && (
             <span className="flex items-center gap-1.5 text-xs bg-orange-50 text-orange-700 border border-orange-200 px-2 py-1 rounded-full">
               <Globe size={11} /> Google Analytics conectado
+            </span>
+          )}
+          {gaConfigured && !gaLoading && gaError && (
+            <span className="flex items-center gap-1.5 text-xs bg-red-50 text-red-700 border border-red-200 px-2 py-1 rounded-full" title={gaError}>
+              <Globe size={11} /> GA4: {gaError.slice(0, 60)}
             </span>
           )}
           {igConfigured && !igLoading && igData && (
