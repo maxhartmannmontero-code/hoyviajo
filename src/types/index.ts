@@ -31,6 +31,8 @@ export interface Activity {
   createdAt: string;
 }
 
+export type VoucherType = "vuelo" | "alojamiento" | "traslado" | "otro";
+
 export interface Voucher {
   id: string;
   contactId: string;
@@ -47,6 +49,7 @@ export interface Voucher {
   checkOut: string;
   calendarEventId: string;
   notes: string;
+  voucherType: VoucherType;
 }
 
 export interface Campaign {

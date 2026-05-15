@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
   const checkIn = (formData.get("checkIn") as string) || "";
   const checkOut = (formData.get("checkOut") as string) || "";
   const notes = (formData.get("notes") as string) || "";
+  const voucherType = ((formData.get("voucherType") as string) || "otro") as import("@/types").VoucherType;
 
   const buffer = Buffer.from(await file.arrayBuffer());
   const { fileId, webViewLink } = await uploadVoucher(token, file.name, file.type, buffer, contactName);
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
   const voucher = await createVoucher(token, {
     contactId, contactName, fileName: file.name,
     driveFileId: fileId, driveUrl: webViewLink,
-    amount, currency, date, description, checkIn, checkOut, calendarEventId: "", notes,
+    amount, currency, date, description, checkIn, checkOut, calendarEventId: "", notes, voucherType,
   });
 
   return NextResponse.json(voucher, { status: 201 });

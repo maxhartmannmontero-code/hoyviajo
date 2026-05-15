@@ -196,11 +196,12 @@ function rowToVoucher(row: string[]): Voucher {
     currency: row[7] || "USD", date: row[8] || "", description: row[9] || "",
     createdAt: row[10] || "", checkIn: row[11] || "", checkOut: row[12] || "",
     calendarEventId: row[13] || "",
+    voucherType: (row[15] as import("@/types").VoucherType) || "otro",
   };
 }
 
 export async function getVouchers(accessToken: string, contactId?: string): Promise<Voucher[]> {
-  const rows = await readSheet(accessToken, "Vouchers!A2:O");
+  const rows = await readSheet(accessToken, "Vouchers!A2:P");
   const vouchers = rows.filter((r) => r[0]).map(rowToVoucher);
   return contactId ? vouchers.filter((v) => v.contactId === contactId) : vouchers;
 }
@@ -215,6 +216,7 @@ export async function createVoucher(
     id, data.contactId, data.contactName, data.fileName, data.driveFileId, data.driveUrl,
     String(data.amount), data.currency, data.date, data.description, now,
     data.checkIn || "", data.checkOut || "", data.calendarEventId || "", data.notes || "",
+    data.voucherType || "otro",
   ];
   await appendRow(accessToken, "Vouchers", row);
   return { ...data, id, createdAt: now };
@@ -232,16 +234,16 @@ export async function setVoucherCalendarEvent(
   await updateRow(accessToken, "Vouchers", rowIndex + 2, [
     v.id, v.contactId, v.contactName, v.fileName, v.driveFileId, v.driveUrl,
     String(v.amount), v.currency, v.date, v.description, v.createdAt,
-    v.checkIn, v.checkOut, calendarEventId, v.notes || "",
+    v.checkIn, v.checkOut, calendarEventId, v.notes || "", v.voucherType || "otro",
   ]);
 }
 
 export async function updateVoucher(
   accessToken: string,
   id: string,
-  patch: Partial<Pick<Voucher, "description" | "notes" | "date" | "checkIn" | "checkOut">>
+  patch: Partial<Pick<Voucher, "description" | "notes" | "date" | "checkIn" | "checkOut" | "voucherType">>
 ): Promise<void> {
-  const rows = await readSheet(accessToken, "Vouchers!A2:O");
+  const rows = await readSheet(accessToken, "Vouchers!A2:P");
   const rowIndex = rows.findIndex((r) => r[0] === id);
   if (rowIndex === -1) throw new Error("Voucher not found");
   const v = rowToVoucher(rows[rowIndex]);
@@ -255,6 +257,7 @@ export async function updateVoucher(
     patch.checkOut ?? v.checkOut,
     v.calendarEventId,
     patch.notes ?? v.notes,
+    patch.voucherType ?? v.voucherType ?? "otro",
   ]);
 }
 
@@ -264,7 +267,7 @@ export async function deleteVoucher(accessToken: string, id: string): Promise<{ 
   const sheet = spreadsheet.data.sheets?.find((s) => s.properties?.title === "Vouchers");
   const sheetId = sheet?.properties?.sheetId;
   if (sheetId == null) throw new Error("Vouchers sheet not found");
-  const rows = await readSheet(accessToken, "Vouchers!A2:O");
+  const rows = await readSheet(accessToken, "Vouchers!A2:P");
   const rowIndex = rows.findIndex((r) => r[0] === id);
   if (rowIndex === -1) throw new Error("Voucher not found");
   const v = rowToVoucher(rows[rowIndex]);
