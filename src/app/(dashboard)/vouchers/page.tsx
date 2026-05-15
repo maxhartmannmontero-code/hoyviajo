@@ -18,12 +18,12 @@ function UploadModal({
   const [form, setForm] = useState({
     contactId: "",
     newContactName: "",
-    amount: "",
-    currency: "USD",
     date: new Date().toISOString().split("T")[0],
     description: "",
+    notes: "",
     checkIn: "",
     checkOut: "",
+    addToCalendar: false,
   });
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -59,13 +59,22 @@ function UploadModal({
       fd.append("file", file);
       fd.append("contactId", contactId);
       fd.append("contactName", resolvedName);
-      fd.append("amount", form.amount);
-      fd.append("currency", form.currency);
+      fd.append("amount", "0");
+      fd.append("currency", "");
       fd.append("date", form.date);
       fd.append("description", form.description);
+      fd.append("notes", form.notes);
       fd.append("checkIn", form.checkIn);
       fd.append("checkOut", form.checkOut);
-      await fetch("/api/vouchers", { method: "POST", body: fd });
+      const res = await fetch("/api/vouchers", { method: "POST", body: fd });
+      if (form.addToCalendar && form.checkIn && res.ok) {
+        const voucher = await res.json();
+        await fetch("/api/calendar/voucher", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ voucherId: voucher.id }),
+        });
+      }
     }
 
     setUploading(false);
@@ -122,23 +131,6 @@ function UploadModal({
             )}
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div className="col-span-2">
-              <label className="text-xs font-medium text-gray-700 block mb-1">Monto</label>
-              <input type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-gray-700 block mb-1">Moneda</label>
-              <select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="USD">USD</option>
-                <option value="CLP">CLP</option>
-                <option value="EUR">EUR</option>
-              </select>
-            </div>
-          </div>
-
           <div>
             <label className="text-xs font-medium text-gray-700 block mb-1">Fecha del voucher</label>
             <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })}
@@ -148,8 +140,15 @@ function UploadModal({
           <div>
             <label className="text-xs font-medium text-gray-700 block mb-1">Descripción del viaje</label>
             <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="Ej: Vuelo Santiago → Cancún + Hotel 5N"
+              placeholder="Ej: Vuelo Santiago → Cancún"
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-gray-700 block mb-1">Comentarios</label>
+            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              rows={2} placeholder="Ej: Incluye traslados, seguro de viaje, etc."
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
           </div>
 
           <div className="bg-blue-50 rounded-xl p-4 space-y-3">
@@ -171,9 +170,20 @@ function UploadModal({
                   className="w-full border border-blue-200 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
             </div>
-            <p className="text-xs text-blue-500">
-              Opcional — si las completas podrás crear una alerta en Google Calendar con 1 clic después de subir el voucher.
-            </p>
+            {form.checkIn && (
+              <label className="flex items-center gap-2 cursor-pointer mt-1">
+                <input
+                  type="checkbox"
+                  checked={form.addToCalendar}
+                  onChange={(e) => setForm({ ...form, addToCalendar: e.target.checked })}
+                  className="w-4 h-4 rounded accent-blue-600"
+                />
+                <span className="text-xs font-medium text-blue-700">Agregar al Google Calendar</span>
+              </label>
+            )}
+            {!form.checkIn && (
+              <p className="text-xs text-blue-500">Completa las fechas para poder agregar al Calendar.</p>
+            )}
           </div>
 
           <div className="flex justify-end gap-3">

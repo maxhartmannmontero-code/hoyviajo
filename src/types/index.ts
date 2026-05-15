@@ -46,6 +46,7 @@ export interface Voucher {
   checkIn: string;
   checkOut: string;
   calendarEventId: string;
+  notes: string;
 }
 
 export interface Campaign {
