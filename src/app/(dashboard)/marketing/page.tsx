@@ -42,9 +42,10 @@ const CHANNEL_CONFIG = [
   {
     key: "rrss", label: "RRSS (Instagram)", Icon: Camera, bg: "bg-purple-50", text: "text-purple-600",
     fields: [
-      { key: "rrssFollowers",   label: "Seguidores"    },
-      { key: "rrssReach",       label: "Alcance"       },
-      { key: "rrssEngagements", label: "Interacciones" },
+      { key: "rrssViews",        label: "Visualizaciones totales" },
+      { key: "rrssReach",        label: "Cuentas alcanzadas"      },
+      { key: "rrssEngagements",  label: "Interacciones totales"   },
+      { key: "rrssNewFollowers", label: "Nuevos seguidores"       },
     ],
   },
   {
@@ -74,8 +75,9 @@ type MetricsFormData = Omit<MktMetrics, "id" | "createdAt">;
 
 const EMPTY_METRICS = (month: string): MetricsFormData => ({
   month, periodFrom: "", periodTo: "", webSessions: 0, webInquiries: 0,
-  rrssFollowers: 0, rrssReach: 0, rrssEngagements: 0, wspConversations: 0,
-  wspNewContacts: 0, emailSent: 0, emailOpens: 0, emailClicks: 0, otrosNotes: "",
+  rrssViews: 0, rrssReach: 0, rrssEngagements: 0, rrssNewFollowers: 0,
+  wspConversations: 0, wspNewContacts: 0, emailSent: 0, emailOpens: 0,
+  emailClicks: 0, otrosNotes: "",
 });
 
 const STATUS_COLORS: Record<string, string> = {
@@ -516,7 +518,7 @@ function DashboardTab({ metrics, onRefresh }: { metrics: MktMetrics[]; onRefresh
                       <td className="py-2 text-right font-medium">
                         {igData
                           ? <span className="text-purple-600">{igData.followersCount.toLocaleString("es-CL")}</span>
-                          : manual?.rrssFollowers || "—"}
+                          : manual?.rrssNewFollowers || "—"}
                       </td>
                     </tr>
                   );

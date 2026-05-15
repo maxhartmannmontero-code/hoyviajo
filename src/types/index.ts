@@ -163,9 +163,10 @@ export interface MktMetrics {
   periodTo: string;
   webSessions: number;
   webInquiries: number;
-  rrssFollowers: number;
+  rrssViews: number;
   rrssReach: number;
   rrssEngagements: number;
+  rrssNewFollowers: number;
   wspConversations: number;
   wspNewContacts: number;
   emailSent: number;
