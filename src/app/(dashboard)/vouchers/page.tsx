@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Upload, FileText, ExternalLink, X, Search, CalendarPlus, CalendarCheck, Loader2, Trash2, Pencil } from "lucide-react";
+import { Upload, FileText, ExternalLink, X, Search, CalendarPlus, CalendarCheck, Loader2, Trash2, Pencil, Folder, FolderOpen, ChevronRight } from "lucide-react";
 import { Voucher, Contact } from "@/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -305,6 +305,15 @@ export default function VouchersPage() {
   const [calendarSuccess, setCalendarSuccess] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [editingVoucher, setEditingVoucher] = useState<Voucher | null>(null);
+  const [openFolders, setOpenFolders] = useState<Set<string>>(new Set());
+
+  function toggleFolder(name: string) {
+    setOpenFolders((prev) => {
+      const next = new Set(prev);
+      next.has(name) ? next.delete(name) : next.add(name);
+      return next;
+    });
+  }
 
   async function fetchData() {
     const [v, c] = await Promise.all([
@@ -352,6 +361,15 @@ export default function VouchersPage() {
   );
 
   const totalAmount = filtered.reduce((s, v) => s + v.amount, 0);
+
+  // Group by client, sorted alphabetically
+  const grouped = filtered.reduce<Record<string, Voucher[]>>((acc, v) => {
+    (acc[v.contactName] ??= []).push(v);
+    return acc;
+  }, {});
+  const clientNames = Object.keys(grouped).sort((a, b) => a.localeCompare(b, "es"));
+  // Auto-expand all when searching
+  const isOpen = (name: string) => search ? true : openFolders.has(name);
 
   // Upcoming trips (checkIn in the future)
   const today = new Date().toISOString().slice(0, 10);
@@ -410,83 +428,89 @@ export default function VouchersPage() {
 
       {loading ? (
         <div className="flex justify-center py-20"><div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full" /></div>
+      ) : clientNames.length === 0 ? (
+        <div className="text-center py-16 text-gray-400">
+          <FileText size={40} className="mx-auto mb-3 opacity-30" />
+          <p>No hay vouchers aún</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.length === 0 ? (
-            <div className="col-span-3 text-center py-16 text-gray-400">
-              <FileText size={40} className="mx-auto mb-3 opacity-30" />
-              <p>No hay vouchers aún</p>
-            </div>
-          ) : (
-            filtered
-              .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-              .map((v) => (
-                <div key={v.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className="p-2 bg-blue-50 rounded-lg flex-shrink-0">
-                      <FileText size={20} className="text-blue-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{v.fileName}</p>
-                      <p className="text-xs text-gray-500">{v.contactName}</p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {/* Calendar button */}
-                      {calendarSuccess === v.id ? (
-                        <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
-                          <CalendarCheck size={14} /> Creado
-                        </span>
-                      ) : v.calendarEventId ? (
-                        <button onClick={() => handleAddToCalendar(v.id)}
-                          disabled={addingCalendar === v.id}
-                          aria-label="Actualizar evento en Calendar"
-                          className="text-green-500 hover:text-green-700 disabled:opacity-50">
-                          {addingCalendar === v.id ? <Loader2 size={16} className="animate-spin" /> : <CalendarCheck size={16} />}
-                        </button>
-                      ) : (
-                        <button onClick={() => handleAddToCalendar(v.id)}
-                          disabled={addingCalendar === v.id}
-                          title="Agregar al Google Calendar"
-                          className="text-gray-300 hover:text-blue-600 transition-colors disabled:opacity-50">
-                          {addingCalendar === v.id ? <Loader2 size={16} className="animate-spin" /> : <CalendarPlus size={16} />}
-                        </button>
-                      )}
-                      <a href={v.driveUrl} target="_blank" rel="noopener noreferrer"
-                        className="text-gray-400 hover:text-blue-600">
-                        <ExternalLink size={16} />
-                      </a>
-                      <button onClick={() => setEditingVoucher(v)}
-                        title="Editar voucher"
-                        className="text-gray-300 hover:text-blue-600 transition-colors">
-                        <Pencil size={16} />
-                      </button>
-                      <button onClick={() => handleDelete(v.id)} disabled={deleting === v.id}
-                        title="Eliminar voucher"
-                        className="text-gray-300 hover:text-red-500 transition-colors disabled:opacity-50">
-                        {deleting === v.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                      </button>
-                    </div>
+        <div className="space-y-3">
+          {clientNames.map((clientName) => {
+            const clientVouchers = grouped[clientName].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+            const open = isOpen(clientName);
+            return (
+              <div key={clientName} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                {/* Folder header */}
+                <button
+                  onClick={() => toggleFolder(clientName)}
+                  className="w-full flex items-center gap-3 px-5 py-4 hover:bg-gray-50 transition-colors text-left"
+                >
+                  {open
+                    ? <FolderOpen size={20} className="text-blue-500 flex-shrink-0" />
+                    : <Folder size={20} className="text-blue-400 flex-shrink-0" />}
+                  <span className="flex-1 font-semibold text-gray-800 text-sm">{clientName}</span>
+                  <span className="text-xs text-gray-400 bg-gray-100 rounded-full px-2 py-0.5 mr-2">
+                    {clientVouchers.length} {clientVouchers.length === 1 ? "archivo" : "archivos"}
+                  </span>
+                  <ChevronRight size={16} className={`text-gray-400 transition-transform ${open ? "rotate-90" : ""}`} />
+                </button>
+
+                {/* Voucher rows */}
+                {open && (
+                  <div className="border-t border-gray-100 divide-y divide-gray-50">
+                    {clientVouchers.map((v) => (
+                      <div key={v.id} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors">
+                        <FileText size={16} className="text-blue-400 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-800 truncate">{v.fileName}</p>
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            {v.description && <span className="text-xs text-gray-500 truncate max-w-xs">{v.description}</span>}
+                            {(v.checkIn || v.checkOut) && (
+                              <span className="flex items-center gap-1 text-xs text-blue-500">
+                                <CalendarCheck size={11} />
+                                {v.checkIn}{v.checkOut ? ` → ${v.checkOut}` : ""}
+                              </span>
+                            )}
+                            {v.notes && <span className="text-xs text-gray-400 italic truncate max-w-xs">{v.notes}</span>}
+                          </div>
+                        </div>
+                        <span className="text-xs text-gray-400 flex-shrink-0 hidden sm:block">{formatDate(v.date)}</span>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          {calendarSuccess === v.id ? (
+                            <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+                              <CalendarCheck size={14} /> Creado
+                            </span>
+                          ) : v.calendarEventId ? (
+                            <button onClick={() => handleAddToCalendar(v.id)} disabled={addingCalendar === v.id}
+                              title="En Google Calendar" className="text-green-500 hover:text-green-700 disabled:opacity-50">
+                              {addingCalendar === v.id ? <Loader2 size={15} className="animate-spin" /> : <CalendarCheck size={15} />}
+                            </button>
+                          ) : (
+                            <button onClick={() => handleAddToCalendar(v.id)} disabled={addingCalendar === v.id}
+                              title="Agregar al Calendar" className="text-gray-300 hover:text-blue-500 transition-colors disabled:opacity-50">
+                              {addingCalendar === v.id ? <Loader2 size={15} className="animate-spin" /> : <CalendarPlus size={15} />}
+                            </button>
+                          )}
+                          <a href={v.driveUrl} target="_blank" rel="noopener noreferrer"
+                            title="Ver en Drive" className="text-gray-300 hover:text-blue-500 transition-colors">
+                            <ExternalLink size={15} />
+                          </a>
+                          <button onClick={() => setEditingVoucher(v)} title="Editar"
+                            className="text-gray-300 hover:text-blue-500 transition-colors">
+                            <Pencil size={15} />
+                          </button>
+                          <button onClick={() => handleDelete(v.id)} disabled={deleting === v.id}
+                            title="Eliminar" className="text-gray-300 hover:text-red-500 transition-colors disabled:opacity-50">
+                            {deleting === v.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-
-                  <div className="flex items-center justify-between text-sm mb-2">
-                    <span className="font-semibold text-gray-900">{formatCurrency(v.amount, v.currency)}</span>
-                    <span className="text-xs text-gray-400">{formatDate(v.date)}</span>
-                  </div>
-
-                  {(v.checkIn || v.checkOut) && (
-                    <div className="flex items-center gap-1.5 text-xs text-blue-600 bg-blue-50 rounded-lg px-2 py-1 mb-2">
-                      <CalendarCheck size={12} />
-                      <span>{v.checkIn || "?"}</span>
-                      {v.checkOut && <><span className="text-blue-300">→</span><span>{v.checkOut}</span></>}
-                    </div>
-                  )}
-
-                  {v.description && (
-                    <p className="text-xs text-gray-500 truncate">{v.description}</p>
-                  )}
-                </div>
-              ))
-          )}
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
