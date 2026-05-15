@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import {
   LayoutDashboard, Users, Kanban, FileText, Megaphone,
-  TrendingUp, LogOut, ChevronRight, Receipt, GitCompare,
+  TrendingUp, LogOut, ChevronRight, Receipt, GitCompare, SendHorizonal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +18,7 @@ const navItems = [
   { href: "/conciliacion",   label: "Conciliación",   icon: GitCompare  },
   { href: "/marketing",      label: "Marketing",      icon: Megaphone   },
   { href: "/vouchers",  label: "Vouchers",   icon: FileText        },
+  { href: "/mailing",   label: "Mailing",    icon: SendHorizonal   },
 ];
 
 export function Sidebar() {
