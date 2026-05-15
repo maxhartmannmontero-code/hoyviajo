@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import { Campaign, Template, Contact, WeeklyKPI, MktMetrics } from "@/types";
 import type { GAMonthlyData } from "@/lib/google-analytics";
-import type { InstagramMonthlyData } from "@/lib/instagram";
 import { formatDateTime } from "@/lib/utils";
 
 // ─── Constants ─────────────────────────────────────────────────────────────
@@ -251,9 +250,6 @@ function DashboardTab({ metrics, onRefresh }: { metrics: MktMetrics[]; onRefresh
   const [gaConfigured, setGaConfigured] = useState(true);
   const [gaLoading, setGaLoading] = useState(true);
   const [gaError, setGaError] = useState<string | null>(null);
-  const [igData, setIgData] = useState<InstagramMonthlyData | null>(null);
-  const [igConfigured, setIgConfigured] = useState(true);
-  const [igLoading, setIgLoading] = useState(true);
 
   const existing = metrics.find((m) => m.month === month);
 
@@ -273,15 +269,6 @@ function DashboardTab({ metrics, onRefresh }: { metrics: MktMetrics[]; onRefresh
       })
       .catch((e) => setGaError(String(e)))
       .finally(() => setGaLoading(false));
-
-    fetch("/api/instagram")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.error === "not_configured") { setIgConfigured(false); return; }
-        if (data && !data.error) setIgData(data as InstagramMonthlyData);
-      })
-      .catch(() => {})
-      .finally(() => setIgLoading(false));
   }, []);
 
   const gaMonth = gaByMonth[month];
@@ -314,11 +301,6 @@ function DashboardTab({ metrics, onRefresh }: { metrics: MktMetrics[]; onRefresh
               <Globe size={11} /> GA4: {gaError.slice(0, 60)}
             </span>
           )}
-          {igConfigured && !igLoading && igData && (
-            <span className="flex items-center gap-1.5 text-xs bg-purple-50 text-purple-700 border border-purple-200 px-2 py-1 rounded-full">
-              <Camera size={11} /> Instagram conectado
-            </span>
-          )}
         </div>
         <button onClick={() => setShowModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700">
@@ -344,23 +326,6 @@ function DashboardTab({ metrics, onRefresh }: { metrics: MktMetrics[]; onRefresh
         </div>
       )}
 
-      {!igConfigured && (
-        <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4 flex items-start gap-3">
-          <Camera size={18} className="text-purple-500 mt-0.5 shrink-0" />
-          <div>
-            <p className="text-sm font-semibold text-purple-800">Instagram no conectado</p>
-            <p className="text-xs text-purple-600 mt-1">
-              Para ver seguidores y alcance en tiempo real, agrega en <code className="bg-purple-100 px-1 rounded">.env.local</code>:
-            </p>
-            <code className="text-xs bg-purple-100 px-2 py-1 rounded block mt-1 text-purple-800 whitespace-pre">
-              META_ACCESS_TOKEN=tu_token{"\n"}INSTAGRAM_ACCOUNT_ID=tu_id_de_cuenta
-            </code>
-            <p className="text-xs text-purple-500 mt-1">
-              Obtenlos en developers.facebook.com → Graph API Explorer.
-            </p>
-          </div>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {CHANNEL_CONFIG.map(({ key, label, Icon, bg, text, fields }) => {
@@ -396,37 +361,6 @@ function DashboardTab({ metrics, onRefresh }: { metrics: MktMetrics[]; onRefresh
             );
           }
 
-          // RRSS card: show live Instagram data if available
-          if (key === "rrss" && igData && !igLoading) {
-            return (
-              <div key="rrss" className="bg-white rounded-2xl border border-purple-100 shadow-sm p-5 ring-1 ring-purple-200/50">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="p-2 rounded-xl bg-purple-50"><Camera size={16} className="text-purple-600" /></div>
-                  <span className="font-medium text-gray-900 text-sm">RRSS (Instagram)</span>
-                  <span className="ml-auto text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
-                    Live Meta
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  {[
-                    { label: "Seguidores",    value: igData.followersCount.toLocaleString("es-CL") },
-                    { label: "Publicaciones", value: igData.mediaCount.toLocaleString("es-CL")     },
-                    { label: "Alcance",       value: igData.reach.toLocaleString("es-CL")          },
-                    { label: "Impresiones",   value: igData.impressions.toLocaleString("es-CL")    },
-                    { label: "Visitas perfil",value: igData.profileViews.toLocaleString("es-CL")   },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="flex justify-between text-sm">
-                      <span className="text-gray-500">{label}</span>
-                      <span className="font-semibold text-gray-800">{value}</span>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs text-purple-400 mt-3 flex items-center gap-1">
-                  <Camera size={10} /> Datos directos de Meta Graph API
-                </p>
-              </div>
-            );
-          }
 
           const existingAny = existing as unknown as Record<string, string | number>;
           const hasData = existing && fields.some((f) =>
@@ -445,13 +379,7 @@ function DashboardTab({ metrics, onRefresh }: { metrics: MktMetrics[]; onRefresh
                 {key === "web" && !gaLoading && !gaMonth && (
                   <span className="ml-auto text-xs text-gray-400 italic">Sin datos GA4</span>
                 )}
-                {key === "rrss" && igLoading && (
-                  <span className="ml-auto text-xs text-gray-400 animate-pulse">cargando Instagram...</span>
-                )}
-                {key !== "web" && key !== "rrss" && !hasData && (
-                  <span className="ml-auto text-xs text-gray-400 italic">Sin datos</span>
-                )}
-                {key === "rrss" && !igLoading && !igData && !hasData && (
+                {key !== "web" && !hasData && (
                   <span className="ml-auto text-xs text-gray-400 italic">Sin datos</span>
                 )}
               </div>
@@ -515,11 +443,7 @@ function DashboardTab({ metrics, onRefresh }: { metrics: MktMetrics[]; onRefresh
                       <td className="py-2 text-right font-medium">{ga ? Math.round(ga.activeUsers) : "—"}</td>
                       <td className="py-2 text-right font-medium">{manual?.wspNewContacts || "—"}</td>
                       <td className="py-2 text-right font-medium">{manual?.emailOpens ? `${manual.emailOpens}%` : "—"}</td>
-                      <td className="py-2 text-right font-medium">
-                        {igData
-                          ? <span className="text-purple-600">{igData.followersCount.toLocaleString("es-CL")}</span>
-                          : manual?.rrssNewFollowers || "—"}
-                      </td>
+                      <td className="py-2 text-right font-medium">{manual?.rrssNewFollowers || "—"}</td>
                     </tr>
                   );
                 })}
