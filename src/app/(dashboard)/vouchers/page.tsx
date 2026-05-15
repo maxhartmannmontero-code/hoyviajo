@@ -14,7 +14,7 @@ function UploadModal({
   onClose: () => void;
   onSave: () => void;
 }) {
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [form, setForm] = useState({
     contactId: "",
     newContactName: "",
@@ -34,7 +34,7 @@ function UploadModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!file || !resolvedName) return;
+    if (!files.length || !resolvedName) return;
     setUploading(true);
 
     let contactId = isNew ? "" : form.contactId;
@@ -54,17 +54,20 @@ function UploadModal({
       }
     }
 
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("contactId", contactId);
-    fd.append("contactName", resolvedName);
-    fd.append("amount", form.amount);
-    fd.append("currency", form.currency);
-    fd.append("date", form.date);
-    fd.append("description", form.description);
-    fd.append("checkIn", form.checkIn);
-    fd.append("checkOut", form.checkOut);
-    await fetch("/api/vouchers", { method: "POST", body: fd });
+    for (const file of files) {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("contactId", contactId);
+      fd.append("contactName", resolvedName);
+      fd.append("amount", form.amount);
+      fd.append("currency", form.currency);
+      fd.append("date", form.date);
+      fd.append("description", form.description);
+      fd.append("checkIn", form.checkIn);
+      fd.append("checkOut", form.checkOut);
+      await fetch("/api/vouchers", { method: "POST", body: fd });
+    }
+
     setUploading(false);
     onSave();
     onClose();
@@ -81,18 +84,20 @@ function UploadModal({
           <div
             onClick={() => fileRef.current?.click()}
             className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
-              file ? "border-blue-400 bg-blue-50" : "border-gray-200 hover:border-gray-300"
+              files.length ? "border-blue-400 bg-blue-50" : "border-gray-200 hover:border-gray-300"
             }`}
           >
-            <input ref={fileRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+            <input ref={fileRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp" multiple
+              onChange={(e) => setFiles(Array.from(e.target.files ?? []))} />
             <Upload size={24} className="mx-auto text-gray-400 mb-2" />
-            {file ? (
-              <p className="text-sm text-blue-700 font-medium">{file.name}</p>
+            {files.length ? (
+              <div className="space-y-1">
+                {files.map((f, i) => <p key={i} className="text-sm text-blue-700 font-medium">{f.name}</p>)}
+              </div>
             ) : (
               <>
-                <p className="text-sm text-gray-600 font-medium">Haz clic para seleccionar archivo</p>
-                <p className="text-xs text-gray-400 mt-1">PDF, JPG, PNG — máx. 10MB</p>
+                <p className="text-sm text-gray-600 font-medium">Haz clic para seleccionar archivos</p>
+                <p className="text-xs text-gray-400 mt-1">PDF, JPG, PNG — máx. 10MB · puedes seleccionar varios</p>
               </>
             )}
           </div>
@@ -102,7 +107,7 @@ function UploadModal({
             <select required value={form.contactId} onChange={(e) => setForm({ ...form, contactId: e.target.value, newContactName: "" })}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">Seleccionar cliente</option>
-              {contacts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {[...contacts].sort((a, b) => a.name.localeCompare(b.name, "es")).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               <option value="__new__">+ Agregar nombre nuevo...</option>
             </select>
             {isNew && (
@@ -173,7 +178,7 @@ function UploadModal({
 
           <div className="flex justify-end gap-3">
             <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600">Cancelar</button>
-            <button type="submit" disabled={uploading || !file}
+            <button type="submit" disabled={uploading || !files.length}
               className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50">
               {uploading ? "Subiendo..." : "Subir Voucher"}
             </button>
