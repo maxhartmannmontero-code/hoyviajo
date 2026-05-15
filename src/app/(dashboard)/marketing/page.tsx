@@ -73,8 +73,8 @@ const CHANNEL_CONFIG = [
 type MetricsFormData = Omit<MktMetrics, "id" | "createdAt">;
 
 const EMPTY_METRICS = (month: string): MetricsFormData => ({
-  month, webSessions: 0, webInquiries: 0, rrssFollowers: 0,
-  rrssReach: 0, rrssEngagements: 0, wspConversations: 0,
+  month, periodFrom: "", periodTo: "", webSessions: 0, webInquiries: 0,
+  rrssFollowers: 0, rrssReach: 0, rrssEngagements: 0, wspConversations: 0,
   wspNewContacts: 0, emailSent: 0, emailOpens: 0, emailClicks: 0, otrosNotes: "",
 });
 
@@ -179,6 +179,23 @@ function MetricsModal({
           <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-xl text-xs text-blue-700">
             <Globe size={13} className="shrink-0" />
             <span>Las métricas de <strong>Web</strong> se cargan automáticamente desde Google Analytics. Aquí registra los otros canales.</span>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-500 mb-2">Período de las métricas</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Desde</label>
+                <input type="date" value={form.periodFrom}
+                  onChange={(e) => setForm((f) => ({ ...f, periodFrom: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Hasta</label>
+                <input type="date" value={form.periodTo}
+                  onChange={(e) => setForm((f) => ({ ...f, periodTo: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+            </div>
           </div>
           {CHANNEL_CONFIG.filter(({ key }) => key !== "web").map(({ key, label, Icon, bg, text, fields }) => (
             <div key={key}>
@@ -438,6 +455,11 @@ function DashboardTab({ metrics, onRefresh }: { metrics: MktMetrics[]; onRefresh
               </div>
               {hasData ? (
                 <div className="space-y-2">
+                  {existing?.periodFrom && (
+                    <p className="text-xs text-gray-400 mb-1">
+                      {existing.periodFrom} → {existing.periodTo || "hoy"}
+                    </p>
+                  )}
                   {fields.map((f) => {
                     const val = existingAny[f.key];
                     return (

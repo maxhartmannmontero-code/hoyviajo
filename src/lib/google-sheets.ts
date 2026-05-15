@@ -555,12 +555,13 @@ function rowToMktMetrics(row: string[]): MktMetrics {
     wspNewContacts: Number(row[8]) || 0, emailSent: Number(row[9]) || 0,
     emailOpens: Number(row[10]) || 0, emailClicks: Number(row[11]) || 0,
     otrosNotes: row[12] || "", createdAt: row[13] || "",
+    periodFrom: row[14] || "", periodTo: row[15] || "",
   };
 }
 
 export async function getMktMetrics(accessToken: string): Promise<MktMetrics[]> {
   try {
-    const rows = await readSheet(accessToken, "MktMetrics!A2:N");
+    const rows = await readSheet(accessToken, "MktMetrics!A2:P");
     return rows.filter((r) => r[0]).map(rowToMktMetrics);
   } catch {
     return [];
@@ -571,7 +572,7 @@ export async function upsertMktMetrics(
   accessToken: string,
   data: Omit<MktMetrics, "id" | "createdAt">
 ): Promise<MktMetrics> {
-  const rows = await readSheet(accessToken, "MktMetrics!A2:N");
+  const rows = await readSheet(accessToken, "MktMetrics!A2:P");
   const rowIndex = rows.findIndex((r) => r[1] === data.month);
   const now = new Date().toISOString();
   const toRow = (id: string, createdAt: string) => [
@@ -579,6 +580,7 @@ export async function upsertMktMetrics(
     String(data.rrssFollowers), String(data.rrssReach), String(data.rrssEngagements),
     String(data.wspConversations), String(data.wspNewContacts), String(data.emailSent),
     String(data.emailOpens), String(data.emailClicks), data.otrosNotes, createdAt,
+    data.periodFrom || "", data.periodTo || "",
   ];
   if (rowIndex === -1) {
     const id = generateId();

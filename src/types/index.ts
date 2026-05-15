@@ -159,6 +159,8 @@ export interface WeeklyKPI {
 export interface MktMetrics {
   id: string;
   month: string;
+  periodFrom: string;
+  periodTo: string;
   webSessions: number;
   webInquiries: number;
   rrssFollowers: number;
