@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Upload, FileText, ExternalLink, X, Search, CalendarPlus, CalendarCheck, Loader2, Trash2, Pencil, Folder, FolderOpen, ChevronRight } from "lucide-react";
+import { Upload, FileText, ExternalLink, X, Search, CalendarPlus, CalendarCheck, Loader2, Trash2, Pencil, Folder, FolderOpen, ChevronRight, CalendarDays, List, ChevronLeft } from "lucide-react";
 import { Voucher, Contact } from "@/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -306,6 +306,8 @@ export default function VouchersPage() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [editingVoucher, setEditingVoucher] = useState<Voucher | null>(null);
   const [openFolders, setOpenFolders] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [calDate, setCalDate] = useState(() => new Date());
 
   function toggleFolder(name: string) {
     setOpenFolders((prev) => {
@@ -378,6 +380,37 @@ export default function VouchersPage() {
     .sort((a, b) => a.checkIn.localeCompare(b.checkIn))
     .slice(0, 5);
 
+  // Calendar data
+  const calYear = calDate.getFullYear();
+  const calMonth = calDate.getMonth();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const firstWeekday = new Date(calYear, calMonth, 1).getDay();
+  const tripsByDay: Record<number, Voucher[]> = {};
+  for (const v of vouchers) {
+    if (!v.checkIn) continue;
+    const d = new Date(v.checkIn + "T12:00:00");
+    if (d.getFullYear() === calYear && d.getMonth() === calMonth) {
+      (tripsByDay[d.getDate()] ??= []).push(v);
+    }
+    if (v.checkOut) {
+      const out = new Date(v.checkOut + "T12:00:00");
+      const start = new Date(v.checkIn + "T12:00:00");
+      let cur = new Date(start);
+      cur.setDate(cur.getDate() + 1);
+      while (cur <= out) {
+        if (cur.getFullYear() === calYear && cur.getMonth() === calMonth) {
+          const day = cur.getDate();
+          if (!(tripsByDay[day] ?? []).find(x => x.id === v.id)) {
+            (tripsByDay[day] ??= []).push(v);
+          }
+        }
+        cur.setDate(cur.getDate() + 1);
+      }
+    }
+  }
+  const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+  const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
@@ -419,11 +452,23 @@ export default function VouchersPage() {
         </div>
       )}
 
-      <div className="relative max-w-sm mb-6">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input value={search} onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar vouchers..."
-          className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      <div className="flex items-center gap-3 mb-6">
+        <div className="relative flex-1 max-w-sm">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar vouchers..."
+            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <div className="flex items-center bg-gray-100 rounded-xl p-1 gap-1">
+          <button onClick={() => setViewMode("list")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${viewMode === "list" ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+            <List size={15} /> Lista
+          </button>
+          <button onClick={() => setViewMode("calendar")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${viewMode === "calendar" ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+            <CalendarDays size={15} /> Calendario
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -432,6 +477,54 @@ export default function VouchersPage() {
         <div className="text-center py-16 text-gray-400">
           <FileText size={40} className="mx-auto mb-3 opacity-30" />
           <p>No hay vouchers aún</p>
+        </div>
+      ) : viewMode === "calendar" ? (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          {/* Month navigation */}
+          <div className="flex items-center justify-between mb-5">
+            <button onClick={() => setCalDate(new Date(calYear, calMonth - 1, 1))}
+              className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
+              <ChevronLeft size={18} />
+            </button>
+            <h2 className="text-base font-semibold text-gray-800">{MONTHS[calMonth]} {calYear}</h2>
+            <button onClick={() => setCalDate(new Date(calYear, calMonth + 1, 1))}
+              className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
+              <ChevronRight size={18} />
+            </button>
+          </div>
+          {/* Weekday headers */}
+          <div className="grid grid-cols-7 mb-2">
+            {DAYS.map((d) => (
+              <div key={d} className="text-center text-xs font-medium text-gray-400 py-1">{d}</div>
+            ))}
+          </div>
+          {/* Day cells */}
+          <div className="grid grid-cols-7 gap-1">
+            {Array.from({ length: firstWeekday }).map((_, i) => <div key={`e-${i}`} />)}
+            {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
+              const trips = tripsByDay[day] ?? [];
+              const now = new Date();
+              const isToday = calYear === now.getFullYear() && calMonth === now.getMonth() && day === now.getDate();
+              return (
+                <div key={day} className={`min-h-[76px] rounded-xl p-1.5 border transition-colors ${isToday ? "border-blue-400 bg-blue-50" : "border-gray-100 bg-gray-50"}`}>
+                  <p className={`text-xs font-semibold mb-1 ${isToday ? "text-blue-600" : "text-gray-400"}`}>{day}</p>
+                  <div className="space-y-0.5">
+                    {trips.map((v) => (
+                      <div key={v.id}
+                        title={`${v.contactName}${v.description ? ` · ${v.description}` : ""}${v.checkIn ? ` (${v.checkIn}${v.checkOut ? ` → ${v.checkOut}` : ""})` : ""}`}
+                        className="bg-blue-100 text-blue-700 text-[10px] font-medium rounded px-1 py-0.5 truncate leading-tight cursor-default">
+                        {v.contactName.split(" ")[0]}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {/* Legend */}
+          {Object.keys(tripsByDay).length === 0 && (
+            <p className="text-center text-sm text-gray-400 mt-6">Sin viajes programados este mes</p>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
