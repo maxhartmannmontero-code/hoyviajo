@@ -1,17 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { getContacts } from "@/lib/google-sheets";
 import { getAccessToken } from "@/lib/get-access-token";
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "mail.infomaniak.com",
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 function injectUtm(html: string, campaign: string): string {
   return html.replace(/href="(https?:\/\/[^"]+)"/g, (_, url) => {
@@ -46,12 +38,13 @@ export async function POST(req: NextRequest) {
     );
 
     try {
-      await transporter.sendMail({
-        from: `"Hoy Viajo" <${process.env.SMTP_USER}>`,
+      const { error } = await resend.emails.send({
+        from: "Hoy Viajo <contacto@hoyviajo.cl>",
         to: contact.email,
         subject,
         html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto">${htmlBody}</div>`,
       });
+      if (error) throw new Error(error.message);
       results.push({ name: contact.name, email: contact.email, ok: true });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
