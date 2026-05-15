@@ -3,11 +3,12 @@ import { getInstagramInsights } from "@/lib/instagram";
 
 export async function GET() {
   const token = process.env.META_ACCESS_TOKEN;
-  const accountId = process.env.INSTAGRAM_ACCOUNT_ID;
-
-  if (!token || !accountId) {
+  if (!token) {
     return NextResponse.json({ error: "not_configured" });
   }
+
+  // accountId defaults to "me" when using Instagram API user token
+  const accountId = process.env.INSTAGRAM_ACCOUNT_ID || "me";
 
   try {
     const data = await getInstagramInsights(token, accountId);
