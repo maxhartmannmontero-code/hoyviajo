@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, TrendingUp, Bell, DollarSign, UserPlus, CheckCircle, CalendarCheck, Target, Globe, Trophy, Eye, EyeOff } from "lucide-react";
+import { Users, Bell, DollarSign, UserPlus, CheckCircle, CalendarCheck, Target, Globe, TrendingUp, Eye, EyeOff, ShoppingBag, Hash, AlertCircle } from "lucide-react";
 import { Contact, Activity, Deal, Sale, Expense, Voucher, WeeklyKPI } from "@/types";
 import { formatCurrency, CONTACT_STATUS_COLORS, CONTACT_STATUS_LABELS } from "@/lib/utils";
 
@@ -17,11 +17,12 @@ interface StatCardProps {
   sub?: string;
   accent: string;
   iconBg: string;
+  alert?: boolean;
 }
 
-function StatCard({ icon, label, value, sub, accent, iconBg }: StatCardProps) {
+function StatCard({ icon, label, value, sub, accent, iconBg, alert }: StatCardProps) {
   return (
-    <div className={`bg-white rounded-xl border border-gray-100 border-l-4 ${accent} p-5 flex items-start gap-4 shadow-sm hover:shadow-md transition-shadow`}>
+    <div className={`bg-white rounded-xl border border-gray-100 border-l-4 ${accent} p-5 flex items-start gap-4 shadow-sm hover:shadow-md transition-shadow ${alert ? "ring-1 ring-red-200" : ""}`}>
       <div className={`p-2.5 rounded-xl ${iconBg} flex-shrink-0`}>{icon}</div>
       <div className="min-w-0">
         <p className="text-xs font-medium text-gray-500 uppercase tracking-wide leading-none mb-1.5">{label}</p>
@@ -84,40 +85,49 @@ export default function DashboardPage() {
 
   const now = new Date();
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const newThisMonth = contacts.filter((c) => c.createdAt?.startsWith(thisMonth)).length;
 
-  const monthCommissions = sales
-    .filter((s) => {
-      const d = s.saleDate || s.createdAt || "";
-      return d.startsWith(thisMonth) && s.status.toLowerCase().includes("emitid");
-    })
-    .reduce((sum, s) => sum + s.commission, 0);
+  // ── Sales metrics ──
+  const emitidas = (s: Sale) => s.status.toLowerCase().includes("emitid");
+
+  const monthSales = sales.filter((s) => {
+    const d = s.saleDate || s.createdAt || "";
+    return d.startsWith(thisMonth) && emitidas(s);
+  });
+  const monthSalesAmount = monthSales.reduce((sum, s) => sum + s.amount, 0);
+  const monthSalesCount = monthSales.length;
+  const avgTicket = monthSalesCount > 0 ? monthSalesAmount / monthSalesCount : 0;
+
+  const monthCommissions = monthSales.reduce((sum, s) => sum + s.commission, 0);
   const monthExpTotal = expenses
     .filter((e) => e.month === thisMonth)
     .reduce((sum, e) => sum + e.amount, 0);
-  const monthNet = monthCommissions - monthExpTotal;
-  const pendingFollowUps = activities.filter((a) => a.status === "pendiente").length;
-  const activeDeals = deals.filter((d) => !["cerrado_ganado", "cerrado_perdido"].includes(d.stage));
-  const closedWon = deals.filter((d) => d.stage === "cerrado_ganado");
-  const totalRevenue = closedWon.reduce((s, d) => s + d.amount, 0);
-  const pipeline = activeDeals.reduce((s, d) => s + d.amount * (d.probability / 100), 0);
 
-  // Meta calculations
+  // Days since last emitida sale
+  const sortedEmitidas = [...sales]
+    .filter(emitidas)
+    .sort((a, b) => (b.saleDate || b.createdAt || "").localeCompare(a.saleDate || a.createdAt || ""));
+  const lastSaleDate = sortedEmitidas[0]?.saleDate || sortedEmitidas[0]?.createdAt || null;
+  const daysSinceSale = lastSaleDate
+    ? Math.floor((now.getTime() - new Date(lastSaleDate + "T12:00:00").getTime()) / 86400000)
+    : null;
+
+  // Recent sales (last 5)
+  const recentSales = sortedEmitidas.slice(0, 5);
+
+  // ── Meta calculations (based on sales, not net) ──
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const daysPassed = now.getDate();
   const daysLeft = daysInMonth - daysPassed;
-  const metaPct = Math.min((monthNet / META) * 100, 100);
+  const metaPct = Math.min((monthSalesAmount / META) * 100, 100);
   const expectedPct = (daysPassed / daysInMonth) * 100;
   const onTrack = metaPct >= expectedPct;
-  const remaining = Math.max(META - monthNet, 0);
+  const remaining = Math.max(META - monthSalesAmount, 0);
   const dailyNeeded = daysLeft > 0 ? remaining / daysLeft : 0;
-  const projected = daysPassed > 0 ? (monthNet / daysPassed) * daysInMonth : 0;
+  const projected = daysPassed > 0 ? (monthSalesAmount / daysPassed) * daysInMonth : 0;
 
-  // Deals closing this month
-  const closingThisMonth = activeDeals
-    .filter((d) => d.closeDate?.startsWith(thisMonth))
-    .sort((a, b) => b.amount - a.amount)
-    .slice(0, 4);
+  // ── Contacts ──
+  const newThisMonth = contacts.filter((c) => c.createdAt?.startsWith(thisMonth)).length;
+  const pendingFollowUps = activities.filter((a) => a.status === "pendiente").length;
 
   const recentContacts = [...contacts]
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
@@ -147,6 +157,9 @@ export default function DashboardPage() {
     { key: "cierres" as keyof WeeklyKPI,      label: "Cierres",      target: 1  },
     { key: "presenciales" as keyof WeeklyKPI, label: "Presenciales", target: 5  },
   ];
+
+  // suppress unused warning
+  void deals;
 
   if (loading) {
     return (
@@ -185,9 +198,10 @@ export default function DashboardPage() {
               Meta mensual · {now.toLocaleDateString("es-CL", { month: "long", year: "numeric" })}
             </p>
             <div className="flex items-end gap-3">
-              <span className="text-4xl font-bold text-white">{hide(fmtCLP(monthNet))}</span>
+              <span className="text-4xl font-bold text-white">{hide(fmtCLP(monthSalesAmount))}</span>
               <span className="text-blue-300 text-lg mb-1">/ {hide(fmtCLP(META))}</span>
             </div>
+            <p className="text-blue-400 text-xs mt-1">ventas emitidas del mes</p>
           </div>
           <div className="text-right">
             <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${onTrack ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
@@ -198,7 +212,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Progress bar */}
         <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden mb-4">
           <div
             className={`h-3 rounded-full transition-all ${metaPct >= 100 ? "bg-emerald-400" : metaPct >= 75 ? "bg-[#3c93d6]" : metaPct >= 50 ? "bg-yellow-400" : metaPct >= 25 ? "bg-orange-400" : "bg-red-400"}`}
@@ -212,16 +225,16 @@ export default function DashboardPage() {
             <p className="text-lg font-bold text-white">{masked ? "••%" : `${metaPct.toFixed(0)}%`}</p>
           </div>
           <div>
-            <p className="text-xs text-blue-300 mb-0.5">Falta</p>
-            <p className="text-lg font-bold text-white">{remaining > 0 ? hide(fmtCLP(remaining)) : "¡Meta lograda!"}</p>
+            <p className="text-xs text-blue-300 mb-0.5">Operaciones</p>
+            <p className="text-lg font-bold text-white">{monthSalesCount} ventas</p>
           </div>
           <div>
-            <p className="text-xs text-blue-300 mb-0.5">Necesario/día</p>
-            <p className="text-lg font-bold text-white">{dailyNeeded > 0 ? hide(fmtCLP(dailyNeeded)) : "—"}</p>
+            <p className="text-xs text-blue-300 mb-0.5">Ticket promedio</p>
+            <p className="text-lg font-bold text-white">{avgTicket > 0 ? hide(fmtCLP(avgTicket)) : "—"}</p>
           </div>
           <div>
             <p className="text-xs text-blue-300 mb-0.5">Proyección</p>
-            <p className={`text-lg font-bold ${projected >= META ? "text-emerald-300" : "text-orange-300"}`}>{hide(fmtCLP(projected))}</p>
+            <p className={`text-lg font-bold ${projected >= META ? "text-emerald-300" : "text-orange-300"}`}>{projected > 0 ? hide(fmtCLP(projected)) : "—"}</p>
           </div>
         </div>
       </div>
@@ -229,48 +242,51 @@ export default function DashboardPage() {
       {/* ── KPI cards ── */}
       <div className="grid grid-cols-2 xl:grid-cols-3 gap-4 mb-6">
         <StatCard
-          icon={<Users size={18} className="text-[#3c93d6]" />}
-          label="Total Contactos"
-          value={contacts.length}
-          sub={`+${newThisMonth} este mes`}
+          icon={<ShoppingBag size={18} className="text-[#3c93d6]" />}
+          label="Ventas del mes"
+          value={hide(fmtCLP(monthSalesAmount))}
+          sub={`${monthSalesCount} operaciones emitidas`}
           accent="border-l-[#3c93d6]"
           iconBg="bg-[#ddeef9]"
         />
         <StatCard
-          icon={<TrendingUp size={18} className="text-purple-600" />}
-          label="Deals Activos"
-          value={activeDeals.length}
-          sub={`Pipeline: ${hide(formatCurrency(pipeline))}`}
-          accent="border-l-purple-500"
-          iconBg="bg-purple-50"
+          icon={<Hash size={18} className="text-indigo-600" />}
+          label="Ticket promedio"
+          value={avgTicket > 0 ? hide(fmtCLP(avgTicket)) : "—"}
+          sub={monthSalesCount > 0 ? `sobre ${monthSalesCount} ventas` : "sin ventas este mes"}
+          accent="border-l-indigo-400"
+          iconBg="bg-indigo-50"
         />
         <StatCard
-          icon={<Bell size={18} className="text-orange-500" />}
-          label="Follow-ups Pendientes"
-          value={pendingFollowUps}
-          accent="border-l-orange-400"
-          iconBg="bg-orange-50"
+          icon={<AlertCircle size={18} className={daysSinceSale !== null && daysSinceSale > 3 ? "text-red-500" : "text-emerald-500"} />}
+          label="Días sin venta"
+          value={daysSinceSale !== null ? `${daysSinceSale}d` : "—"}
+          sub={lastSaleDate ? `Última: ${new Date(lastSaleDate + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "short" })}` : "sin ventas registradas"}
+          accent={daysSinceSale !== null && daysSinceSale > 3 ? "border-l-red-400" : "border-l-emerald-400"}
+          iconBg={daysSinceSale !== null && daysSinceSale > 3 ? "bg-red-50" : "bg-emerald-50"}
+          alert={daysSinceSale !== null && daysSinceSale > 3}
         />
         <StatCard
-          icon={<CheckCircle size={18} className="text-emerald-600" />}
-          label="Clientes Activos"
-          value={contacts.filter((c) => c.status === "cliente").length}
-          accent="border-l-emerald-500"
-          iconBg="bg-emerald-50"
-        />
-        <StatCard
-          icon={<Trophy size={18} className="text-yellow-600" />}
-          label="Comisiones del Mes"
+          icon={<DollarSign size={18} className="text-yellow-600" />}
+          label="Comisiones del mes"
           value={hide(fmtCLP(monthCommissions))}
-          sub={`Gastos: ${hide(fmtCLP(monthExpTotal))}`}
+          sub={monthExpTotal > 0 ? `Gastos: ${hide(fmtCLP(monthExpTotal))}` : "Sin gastos registrados"}
           accent="border-l-yellow-400"
           iconBg="bg-yellow-50"
         />
         <StatCard
-          icon={<DollarSign size={18} className="text-green-600" />}
-          label="Deals Cerrados"
-          value={hide(formatCurrency(totalRevenue))}
-          sub={`${closedWon.length} ganados`}
+          icon={<Bell size={18} className="text-orange-500" />}
+          label="Follow-ups pendientes"
+          value={pendingFollowUps}
+          sub={pendingFollowUps > 0 ? "requieren atención" : "al día"}
+          accent="border-l-orange-400"
+          iconBg="bg-orange-50"
+        />
+        <StatCard
+          icon={<UserPlus size={18} className="text-green-600" />}
+          label="Contactos nuevos"
+          value={newThisMonth}
+          sub={`${contacts.filter((c) => c.status === "cliente").length} clientes activos`}
           accent="border-l-green-500"
           iconBg="bg-green-50"
         />
@@ -279,26 +295,32 @@ export default function DashboardPage() {
       {/* ── Bottom grid ── */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
-        {/* Deals cerrando este mes */}
+        {/* Últimas ventas */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <span className="w-1 h-4 rounded-full bg-purple-500 inline-block flex-shrink-0" />
-            Deals cerrando este mes
+            <span className="w-1 h-4 rounded-full bg-[#3c93d6] inline-block flex-shrink-0" />
+            Últimas ventas
           </h2>
-          {closingThisMonth.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-6">No hay deals con cierre este mes</p>
+          {recentSales.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-6">No hay ventas emitidas aún</p>
           ) : (
-            <div className="space-y-2">
-              {closingThisMonth.map((d) => (
-                <div key={d.id} className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-50 transition-colors">
-                  <div className="w-2 h-2 rounded-full bg-purple-400 flex-shrink-0" />
+            <div className="space-y-1">
+              {recentSales.map((s) => (
+                <div key={s.id} className="flex items-center gap-3 px-2 py-2.5 rounded-xl hover:bg-slate-50 transition-colors">
+                  <div className="w-9 h-9 rounded-xl bg-[#ddeef9] text-[#3c93d6] flex items-center justify-center flex-shrink-0">
+                    <TrendingUp size={15} />
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{d.dealName}</p>
-                    <p className="text-xs text-gray-400 truncate">{d.contactName}</p>
+                    <p className="text-sm font-semibold text-gray-900 truncate">{s.product || "—"}</p>
+                    <p className="text-xs text-gray-400 truncate">{s.clientName || s.saleDate || "—"}</p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-bold text-purple-600">{hide(formatCurrency(d.amount, d.currency))}</p>
-                    <p className="text-xs text-gray-400">{d.probability}% prob.</p>
+                    <p className="text-sm font-bold text-[#3c93d6]">{hide(fmtCLP(s.amount))}</p>
+                    {s.saleDate && (
+                      <p className="text-xs text-gray-400">
+                        {new Date(s.saleDate + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "short" })}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -364,7 +386,7 @@ export default function DashboardPage() {
         {/* Contactos recientes */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <span className="w-1 h-4 rounded-full bg-[#3c93d6] inline-block flex-shrink-0" />
+            <span className="w-1 h-4 rounded-full bg-green-500 inline-block flex-shrink-0" />
             Contactos Recientes
           </h2>
           {recentContacts.length === 0 ? (
