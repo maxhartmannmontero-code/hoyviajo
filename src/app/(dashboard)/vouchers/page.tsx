@@ -429,8 +429,8 @@ export default function VouchersPage() {
     if (d.getFullYear() === calYear && d.getMonth() === calMonth) addDay(d.getDate());
     if (v.checkOut) {
       const out = new Date(v.checkOut + "T12:00:00");
-      if (v.voucherType === "vuelo") {
-        // Flights: only mark departure + return day
+      if (v.voucherType === "vuelo" || v.voucherType === "traslado") {
+        // Flights & transfers: only mark start + end day
         if (out.getFullYear() === calYear && out.getMonth() === calMonth) addDay(out.getDate());
       } else {
         // Accommodation/transfer: mark every night
