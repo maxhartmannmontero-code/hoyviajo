@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Upload, FileText, ExternalLink, X, Search, CalendarPlus, CalendarCheck, Loader2, Trash2, Pencil, Folder, FolderOpen, ChevronRight, CalendarDays, List, ChevronLeft, Plane, Hotel, Car, Package } from "lucide-react";
+import { Upload, FileText, ExternalLink, X, Search, CalendarPlus, CalendarCheck, Loader2, Trash2, Pencil, Folder, FolderOpen, ChevronRight, CalendarDays, List, ChevronLeft, Plane, Hotel, Car, Package, Share2 } from "lucide-react";
 import { Voucher, Contact, VoucherType } from "@/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -383,6 +383,16 @@ export default function VouchersPage() {
 
   useEffect(() => { fetchData(); }, []);
 
+  function handleShareWhatsApp(clientName: string, clientVouchers: Voucher[]) {
+    const lines = clientVouchers.map((v) => {
+      const label = v.description || v.fileName;
+      const tipo = TYPE_CONFIG[v.voucherType || "otro"]?.label ?? "Documento";
+      return `• ${tipo} — ${label}: ${v.driveUrl}`;
+    });
+    const msg = `Hola ${clientName.split(" ")[0]}, te comparto los documentos de tu viaje con Hoy Viajo:\n\n${lines.join("\n")}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+  }
+
   async function handleDelete(voucherId: string) {
     if (!confirm("¿Eliminar este voucher?")) return;
     setDeleting(voucherId);
@@ -576,15 +586,24 @@ export default function VouchersPage() {
             const open = isOpen(clientName);
             return (
               <div key={clientName} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                <button onClick={() => toggleFolder(clientName)}
-                  className="w-full flex items-center gap-3 px-5 py-4 hover:bg-gray-50 transition-colors text-left">
-                  {open ? <FolderOpen size={20} className="text-blue-500 flex-shrink-0" /> : <Folder size={20} className="text-blue-400 flex-shrink-0" />}
-                  <span className="flex-1 font-semibold text-gray-800 text-sm">{clientName}</span>
-                  <span className="text-xs text-gray-400 bg-gray-100 rounded-full px-2 py-0.5 mr-2">
-                    {clientVouchers.length} {clientVouchers.length === 1 ? "archivo" : "archivos"}
-                  </span>
-                  <ChevronRight size={16} className={`text-gray-400 transition-transform ${open ? "rotate-90" : ""}`} />
-                </button>
+                <div className="flex items-center">
+                  <button onClick={() => toggleFolder(clientName)}
+                    className="flex-1 flex items-center gap-3 px-5 py-4 hover:bg-gray-50 transition-colors text-left">
+                    {open ? <FolderOpen size={20} className="text-blue-500 flex-shrink-0" /> : <Folder size={20} className="text-blue-400 flex-shrink-0" />}
+                    <span className="flex-1 font-semibold text-gray-800 text-sm">{clientName}</span>
+                    <span className="text-xs text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">
+                      {clientVouchers.length} {clientVouchers.length === 1 ? "archivo" : "archivos"}
+                    </span>
+                    <ChevronRight size={16} className={`text-gray-400 transition-transform ml-2 ${open ? "rotate-90" : ""}`} />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleShareWhatsApp(clientName, clientVouchers); }}
+                    title="Compartir por WhatsApp"
+                    className="flex items-center gap-1.5 mr-4 px-3 py-1.5 text-xs font-medium text-green-600 bg-green-50 hover:bg-green-100 rounded-lg transition-colors flex-shrink-0"
+                  >
+                    <Share2 size={13} /> WhatsApp
+                  </button>
+                </div>
                 {open && (
                   <div className="border-t border-gray-100 divide-y divide-gray-50">
                     {clientVouchers.map((v) => (
