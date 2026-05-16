@@ -428,11 +428,17 @@ export default function VouchersPage() {
     const d = new Date(v.checkIn + "T12:00:00");
     if (d.getFullYear() === calYear && d.getMonth() === calMonth) addDay(d.getDate());
     if (v.checkOut) {
-      let cur = new Date(d); cur.setDate(cur.getDate() + 1);
       const out = new Date(v.checkOut + "T12:00:00");
-      while (cur <= out) {
-        if (cur.getFullYear() === calYear && cur.getMonth() === calMonth) addDay(cur.getDate());
-        cur.setDate(cur.getDate() + 1);
+      if (v.voucherType === "vuelo") {
+        // Flights: only mark departure + return day
+        if (out.getFullYear() === calYear && out.getMonth() === calMonth) addDay(out.getDate());
+      } else {
+        // Accommodation/transfer: mark every night
+        let cur = new Date(d); cur.setDate(cur.getDate() + 1);
+        while (cur <= out) {
+          if (cur.getFullYear() === calYear && cur.getMonth() === calMonth) addDay(cur.getDate());
+          cur.setDate(cur.getDate() + 1);
+        }
       }
     }
   }
