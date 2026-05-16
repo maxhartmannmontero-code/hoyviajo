@@ -7,7 +7,7 @@ import {
   Target, Check, Lightbulb, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { Campaign, Template, Contact, WeeklyKPI, MktMetrics } from "@/types";
-import type { GAMonthlyData } from "@/lib/google-analytics";
+import type { GAMonthlyData, GADailyComparison } from "@/lib/google-analytics";
 import { formatDateTime } from "@/lib/utils";
 
 // ─── Constants ─────────────────────────────────────────────────────────────
@@ -268,6 +268,7 @@ function DashboardTab({ metrics, onRefresh }: { metrics: MktMetrics[]; onRefresh
   const [month, setMonth] = useState(currentMonth());
   const [showModal, setShowModal] = useState(false);
   const [gaByMonth, setGaByMonth] = useState<Record<string, GAMonthlyData>>({});
+  const [gaDaily, setGaDaily] = useState<GADailyComparison | null>(null);
   const [gaConfigured, setGaConfigured] = useState(true);
   const [gaLoading, setGaLoading] = useState(true);
   const [gaError, setGaError] = useState<string | null>(null);
@@ -276,20 +277,22 @@ function DashboardTab({ metrics, onRefresh }: { metrics: MktMetrics[]; onRefresh
 
   useEffect(() => {
     const end = new Date().toISOString().slice(0, 10);
-    fetch(`/api/analytics?start=2025-04-01&end=${end}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.error === "not_configured") { setGaConfigured(false); return; }
-        if (data?.error) { setGaError(data.error); return; }
-        if (Array.isArray(data)) {
-          const map: Record<string, GAMonthlyData> = {};
-          for (const row of data) map[row.month] = row;
-          setGaByMonth(map);
-          if (Object.keys(map).length === 0) setGaError("Sin datos en el período — GA4 puede ser nuevo o sin tráfico aún");
-        }
-      })
-      .catch((e) => setGaError(String(e)))
-      .finally(() => setGaLoading(false));
+    Promise.all([
+      fetch(`/api/analytics?start=2025-04-01&end=${end}`).then((r) => r.json()),
+      fetch(`/api/analytics?mode=daily`).then((r) => r.json()),
+    ]).then(([monthly, daily]) => {
+      if (monthly?.error === "not_configured") { setGaConfigured(false); return; }
+      if (monthly?.error) { setGaError(monthly.error); return; }
+      if (Array.isArray(monthly)) {
+        const map: Record<string, GAMonthlyData> = {};
+        for (const row of monthly) map[row.month] = row;
+        setGaByMonth(map);
+        if (Object.keys(map).length === 0) setGaError("Sin datos en el período — GA4 puede ser nuevo o sin tráfico aún");
+      }
+      if (daily?.today) setGaDaily(daily as GADailyComparison);
+    })
+    .catch((e) => setGaError(String(e)))
+    .finally(() => setGaLoading(false));
   }, []);
 
   const gaMonth     = gaByMonth[month];
@@ -365,21 +368,43 @@ function DashboardTab({ metrics, onRefresh }: { metrics: MktMetrics[]; onRefresh
                 </div>
                 <div className="space-y-2">
                   {([
-                    { label: "Sesiones",         value: Math.round(gaMonth.sessions),               raw: gaMonth.sessions,    prev: gaPrevMonth?.sessions    ?? 0, invert: false },
-                    { label: "Usuarios activos",  value: Math.round(gaMonth.activeUsers),            raw: gaMonth.activeUsers, prev: gaPrevMonth?.activeUsers ?? 0, invert: false },
-                    { label: "Páginas vistas",    value: Math.round(gaMonth.pageViews),              raw: gaMonth.pageViews,   prev: gaPrevMonth?.pageViews   ?? 0, invert: false },
-                    { label: "Nuevos usuarios",   value: Math.round(gaMonth.newUsers),               raw: gaMonth.newUsers,    prev: gaPrevMonth?.newUsers    ?? 0, invert: false },
-                    { label: "Tasa de rebote",    value: `${Math.round(gaMonth.bounceRate * 100)}%`, raw: gaMonth.bounceRate,  prev: gaPrevMonth?.bounceRate  ?? 0, invert: true  },
-                  ] as { label: string; value: string | number; raw: number; prev: number; invert: boolean }[]).map(({ label, value, raw, prev, invert }) => (
+                    { label: "Sesiones",        raw: gaMonth.sessions,    prev: gaPrevMonth?.sessions    ?? 0, invert: false },
+                    { label: "Usuarios activos", raw: gaMonth.activeUsers, prev: gaPrevMonth?.activeUsers ?? 0, invert: false },
+                    { label: "Páginas vistas",   raw: gaMonth.pageViews,   prev: gaPrevMonth?.pageViews   ?? 0, invert: false },
+                    { label: "Nuevos usuarios",  raw: gaMonth.newUsers,    prev: gaPrevMonth?.newUsers    ?? 0, invert: false },
+                    { label: "Tasa de rebote",   raw: gaMonth.bounceRate,  prev: gaPrevMonth?.bounceRate  ?? 0, invert: true, isPct: true },
+                  ] as { label: string; raw: number; prev: number; invert: boolean; isPct?: boolean }[]).map(({ label, raw, prev, invert, isPct }) => (
                     <div key={label} className="flex justify-between items-center text-sm">
                       <span className="text-gray-500">{label}</span>
                       <span className="flex items-center gap-1.5">
-                        <span className="font-semibold text-gray-800">{value}</span>
+                        <span className="font-semibold text-gray-800">
+                          {isPct ? `${Math.round(raw * 100)}%` : Math.round(raw)}
+                        </span>
                         <Delta current={raw} prev={prev} invertColor={invert} />
                       </span>
                     </div>
                   ))}
                 </div>
+                {gaDaily && (
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <p className="text-[10px] text-gray-400 mb-2 font-medium uppercase tracking-wide">Hoy vs ayer</p>
+                    <div className="space-y-1.5">
+                      {([
+                        { label: "Sesiones",   today: gaDaily.today.sessions,    ayer: gaDaily.yesterday.sessions    },
+                        { label: "Usuarios",   today: gaDaily.today.activeUsers,  ayer: gaDaily.yesterday.activeUsers },
+                        { label: "Pág. vistas", today: gaDaily.today.pageViews,  ayer: gaDaily.yesterday.pageViews   },
+                      ]).map(({ label, today, ayer }) => (
+                        <div key={label} className="flex justify-between items-center text-xs">
+                          <span className="text-gray-400">{label}</span>
+                          <span className="flex items-center gap-1.5">
+                            <span className="font-semibold text-gray-700">{Math.round(today)}</span>
+                            <Delta current={today} prev={ayer} />
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <p className="text-xs text-orange-400 mt-3 flex items-center gap-1">
                   <Globe size={10} /> Datos directos de Google Analytics
                 </p>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAccessToken } from "@/lib/get-access-token";
-import { getGA4MonthlyData } from "@/lib/google-analytics";
+import { getGA4MonthlyData, getGA4DailyComparison } from "@/lib/google-analytics";
 
 export async function GET(req: NextRequest) {
   const token = await getAccessToken();
@@ -11,10 +11,15 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
-  const start = searchParams.get("start") || "2025-04-01";
-  const end = searchParams.get("end") || new Date().toISOString().slice(0, 10);
+  const mode = searchParams.get("mode");
 
   try {
+    if (mode === "daily") {
+      const data = await getGA4DailyComparison(token);
+      return NextResponse.json(data);
+    }
+    const start = searchParams.get("start") || "2025-04-01";
+    const end = searchParams.get("end") || new Date().toISOString().slice(0, 10);
     const data = await getGA4MonthlyData(token, start, end);
     return NextResponse.json(data);
   } catch (e) {
