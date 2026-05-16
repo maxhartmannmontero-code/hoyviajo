@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import {
   Plus, Send, FileText, Users, X, ChevronDown, ChevronUp,
   Globe, Camera, MessageCircle, Mail, MoreHorizontal,
-  Target, Check, Lightbulb,
+  Target, Check, Lightbulb, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { Campaign, Template, Contact, WeeklyKPI, MktMetrics } from "@/types";
 import type { GAMonthlyData } from "@/lib/google-analytics";
@@ -114,6 +114,23 @@ function currentMonth() {
 
 const fmtCLP = (n: number) =>
   new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(n);
+
+function getPrevMonth(month: string): string {
+  const [y, m] = month.split("-").map(Number);
+  return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`;
+}
+
+function Delta({ current, prev, invertColor = false }: { current: number; prev: number; invertColor?: boolean }) {
+  if (!prev || prev === 0 || current === 0) return null;
+  const pct = ((current - prev) / prev) * 100;
+  const positive = invertColor ? pct <= 0 : pct >= 0;
+  return (
+    <span className={`inline-flex items-center gap-0.5 text-[11px] font-semibold ${positive ? "text-green-600" : "text-red-500"}`}>
+      {pct >= 0 ? <ArrowUp size={10} /> : <ArrowDown size={10} />}
+      {Math.abs(pct).toFixed(0)}%
+    </span>
+  );
+}
 
 // ─── ProgressBar ───────────────────────────────────────────────────────────
 
@@ -275,7 +292,9 @@ function DashboardTab({ metrics, onRefresh }: { metrics: MktMetrics[]; onRefresh
       .finally(() => setGaLoading(false));
   }, []);
 
-  const gaMonth = gaByMonth[month];
+  const gaMonth     = gaByMonth[month];
+  const gaPrevMonth = gaByMonth[getPrevMonth(month)];
+  const prevExisting = metrics.find((m) => m.month === getPrevMonth(month));
 
   const months = Array.from({ length: 14 }, (_, i) => {
     const d = new Date(2025, 3 + i, 1);
@@ -345,16 +364,19 @@ function DashboardTab({ metrics, onRefresh }: { metrics: MktMetrics[]; onRefresh
                   </span>
                 </div>
                 <div className="space-y-2">
-                  {[
-                    { label: "Sesiones",         value: Math.round(gaMonth.sessions)    },
-                    { label: "Usuarios activos",  value: Math.round(gaMonth.activeUsers) },
-                    { label: "Páginas vistas",    value: Math.round(gaMonth.pageViews)   },
-                    { label: "Nuevos usuarios",   value: Math.round(gaMonth.newUsers)    },
-                    { label: "Tasa de rebote",    value: `${Math.round(gaMonth.bounceRate * 100)}%` },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="flex justify-between text-sm">
+                  {([
+                    { label: "Sesiones",         value: Math.round(gaMonth.sessions),               raw: gaMonth.sessions,    prev: gaPrevMonth?.sessions    ?? 0, invert: false },
+                    { label: "Usuarios activos",  value: Math.round(gaMonth.activeUsers),            raw: gaMonth.activeUsers, prev: gaPrevMonth?.activeUsers ?? 0, invert: false },
+                    { label: "Páginas vistas",    value: Math.round(gaMonth.pageViews),              raw: gaMonth.pageViews,   prev: gaPrevMonth?.pageViews   ?? 0, invert: false },
+                    { label: "Nuevos usuarios",   value: Math.round(gaMonth.newUsers),               raw: gaMonth.newUsers,    prev: gaPrevMonth?.newUsers    ?? 0, invert: false },
+                    { label: "Tasa de rebote",    value: `${Math.round(gaMonth.bounceRate * 100)}%`, raw: gaMonth.bounceRate,  prev: gaPrevMonth?.bounceRate  ?? 0, invert: true  },
+                  ] as { label: string; value: string | number; raw: number; prev: number; invert: boolean }[]).map(({ label, value, raw, prev, invert }) => (
+                    <div key={label} className="flex justify-between items-center text-sm">
                       <span className="text-gray-500">{label}</span>
-                      <span className="font-semibold text-gray-800">{value}</span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="font-semibold text-gray-800">{value}</span>
+                        <Delta current={raw} prev={prev} invertColor={invert} />
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -396,12 +418,18 @@ function DashboardTab({ metrics, onRefresh }: { metrics: MktMetrics[]; onRefresh
                   )}
                   {fields.map((f) => {
                     const val = existingAny[f.key];
+                    const prevAny = prevExisting as unknown as Record<string, string | number> | undefined;
+                    const prevVal = prevAny ? Number(prevAny[f.key] ?? 0) : 0;
+                    const isText = f.key === "otrosNotes";
                     return (
-                      <div key={f.key} className="flex justify-between text-sm">
+                      <div key={f.key} className="flex justify-between items-center text-sm">
                         <span className="text-gray-500">{f.label}</span>
-                        <span className="font-semibold text-gray-800">
-                          {f.key === "otrosNotes" ? (val as string) || "—" : String(val ?? 0)}
-                          {(f.key === "emailOpens" || f.key === "emailClicks") ? "%" : ""}
+                        <span className="flex items-center gap-1.5">
+                          <span className="font-semibold text-gray-800">
+                            {isText ? (val as string) || "—" : String(val ?? 0)}
+                            {(f.key === "emailOpens" || f.key === "emailClicks") ? "%" : ""}
+                          </span>
+                          {!isText && <Delta current={Number(val ?? 0)} prev={prevVal} />}
                         </span>
                       </div>
                     );
