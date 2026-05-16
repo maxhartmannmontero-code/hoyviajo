@@ -51,7 +51,6 @@ const CHANNEL_CONFIG = [
     key: "wsp", label: "WhatsApp Business", Icon: MessageCircle, bg: "bg-green-50", text: "text-green-600",
     fields: [
       { key: "wspConversations", label: "Conversaciones iniciadas" },
-      { key: "wspNewContacts",   label: "Nuevos contactos"         },
       { key: "wspCatalogViews",  label: "Visualizaciones catálogo" },
       { key: "wspStatusViews",   label: "Visualizaciones estado"   },
     ],
