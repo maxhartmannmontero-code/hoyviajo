@@ -50,8 +50,10 @@ const CHANNEL_CONFIG = [
   {
     key: "wsp", label: "WhatsApp Business", Icon: MessageCircle, bg: "bg-green-50", text: "text-green-600",
     fields: [
-      { key: "wspConversations", label: "Conversaciones"  },
-      { key: "wspNewContacts",   label: "Nuevos contactos" },
+      { key: "wspConversations", label: "Conversaciones iniciadas" },
+      { key: "wspNewContacts",   label: "Nuevos contactos"         },
+      { key: "wspCatalogViews",  label: "Visualizaciones catálogo" },
+      { key: "wspStatusViews",   label: "Visualizaciones estado"   },
     ],
   },
   {
@@ -75,7 +77,7 @@ type MetricsFormData = Omit<MktMetrics, "id" | "createdAt">;
 const EMPTY_METRICS = (month: string): MetricsFormData => ({
   month, periodFrom: "", periodTo: "", webSessions: 0, webInquiries: 0,
   rrssViews: 0, rrssReach: 0, rrssEngagements: 0, rrssNewFollowers: 0,
-  wspConversations: 0, wspNewContacts: 0, emailSent: 0, emailOpens: 0,
+  wspConversations: 0, wspNewContacts: 0, wspCatalogViews: 0, wspStatusViews: 0, emailSent: 0, emailOpens: 0,
   emailClicks: 0, otrosNotes: "",
 });
 

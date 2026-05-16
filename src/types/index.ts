@@ -172,6 +172,8 @@ export interface MktMetrics {
   rrssNewFollowers: number;
   wspConversations: number;
   wspNewContacts: number;
+  wspCatalogViews: number;
+  wspStatusViews: number;
   emailSent: number;
   emailOpens: number;
   emailClicks: number;
