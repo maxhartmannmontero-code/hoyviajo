@@ -1,5 +1,5 @@
 import { google } from "googleapis";
-import { Contact, Activity, Voucher, Campaign, Template, Deal, Sale, WeeklyKPI, MktMetrics, Expense, ExpenseCategory, BankTransaction, BankTxStatus } from "@/types";
+import { Contact, Activity, Voucher, Campaign, Template, Deal, Sale, WeeklyKPI, MktMetrics, Expense, ExpenseCategory, BankTransaction, BankTxStatus, Invoice, InvoiceDirection } from "@/types";
 import { generateId } from "./utils";
 import { getCached, setCached, invalidateCache } from "./cache";
 
@@ -678,6 +678,67 @@ export async function deleteBankTransaction(accessToken: string, id: string): Pr
   await deleteRow(accessToken, sheetId, rowIndex + 2, "BankTx");
 }
 
+// ─── Invoices ──────────────────────────────────────────────────────────────
+// Columns A:N = id, direction, month, number, provider, fileName, driveFileId, driveUrl, amount, currency, date, description, notes, createdAt
+
+function rowToInvoice(row: string[]): Invoice {
+  return {
+    id: row[0],
+    direction: (row[1] as InvoiceDirection) || "recibida",
+    month: row[2] || "",
+    number: row[3] || "",
+    provider: row[4] || "",
+    fileName: row[5] || "",
+    driveFileId: row[6] || "",
+    driveUrl: row[7] || "",
+    amount: parseFloat(row[8]) || 0,
+    currency: row[9] || "CLP",
+    date: row[10] || "",
+    description: row[11] || "",
+    notes: row[12] || "",
+    createdAt: row[13] || "",
+  };
+}
+
+export async function getInvoices(accessToken: string): Promise<Invoice[]> {
+  try {
+    const rows = await readSheet(accessToken, "Facturas!A2:N");
+    return rows.filter((r) => r[0]).map(rowToInvoice);
+  } catch {
+    return [];
+  }
+}
+
+export async function createInvoice(
+  accessToken: string,
+  data: Omit<Invoice, "id" | "createdAt">
+): Promise<Invoice> {
+  const now = new Date().toISOString();
+  const id = generateId();
+  const row = [
+    id, data.direction, data.month, data.number, data.provider,
+    data.fileName, data.driveFileId, data.driveUrl,
+    String(data.amount), data.currency, data.date,
+    data.description, data.notes, now,
+  ];
+  await appendRow(accessToken, "Facturas", row);
+  return { ...data, id, createdAt: now };
+}
+
+export async function deleteInvoice(accessToken: string, id: string): Promise<{ driveFileId: string }> {
+  const sheets = getSheets(accessToken);
+  const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
+  const sheet = spreadsheet.data.sheets?.find((s) => s.properties?.title === "Facturas");
+  const sheetId = sheet?.properties?.sheetId;
+  if (sheetId == null) throw new Error("Facturas sheet not found");
+  const rows = await readSheet(accessToken, "Facturas!A2:N");
+  const rowIndex = rows.findIndex((r) => r[0] === id);
+  if (rowIndex === -1) throw new Error("Invoice not found");
+  const inv = rowToInvoice(rows[rowIndex]);
+  await deleteRow(accessToken, sheetId, rowIndex + 2, "Facturas");
+  return { driveFileId: inv.driveFileId };
+}
+
 // ─── Spreadsheet Init ──────────────────────────────────────────────────────
 
 export async function initSpreadsheet(accessToken: string): Promise<void> {
@@ -697,6 +758,7 @@ export async function initSpreadsheet(accessToken: string): Promise<void> {
     { title: "KPIs", headers: ["id","weekStart","bni11s","presenciales","instaPosts","mailings","whatsappMsgs","cotizaciones","cierres","createdAt"] },
     { title: "MktMetrics", headers: ["id","month","webSessions","webInquiries","rrssFollowers","rrssReach","rrssEngagements","wspConversations","wspNewContacts","emailSent","emailOpens","emailClicks","otrosNotes","createdAt"] },
     { title: "BankTx", headers: ["id","date","description","docNumber","debit","credit","balance","matchedId","matchedType","matchedLabel","status","importedAt"] },
+    { title: "Facturas", headers: ["id","direction","month","number","provider","fileName","driveFileId","driveUrl","amount","currency","date","description","notes","createdAt"] },
   ];
 
   const addRequests = requiredSheets

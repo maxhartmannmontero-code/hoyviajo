@@ -109,6 +109,25 @@ export interface Sale {
   createdAt: string;
 }
 
+export type InvoiceDirection = "recibida" | "emitida";
+
+export interface Invoice {
+  id: string;
+  direction: InvoiceDirection;
+  month: string;
+  number: string;
+  provider: string;
+  fileName: string;
+  driveFileId: string;
+  driveUrl: string;
+  amount: number;
+  currency: string;
+  date: string;
+  description: string;
+  notes: string;
+  createdAt: string;
+}
+
 export interface DashboardStats {
   totalContacts: number;
   activeDeals: number;

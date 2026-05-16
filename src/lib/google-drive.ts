@@ -63,6 +63,49 @@ export async function uploadVoucher(
   return { fileId: file.data.id!, webViewLink: file.data.webViewLink! };
 }
 
+const FACTURAS_FOLDER_NAME = "InterFAX CRM - Facturas";
+
+async function getOrCreateFolder(accessToken: string, name: string, parentId?: string): Promise<string> {
+  const drive = getDrive(accessToken);
+  const parentQ = parentId ? ` and '${parentId}' in parents` : "";
+  const res = await drive.files.list({
+    q: `name='${name}' and mimeType='application/vnd.google-apps.folder' and trashed=false${parentQ}`,
+    fields: "files(id)",
+  });
+  if (res.data.files?.length) return res.data.files[0].id!;
+  const folder = await drive.files.create({
+    requestBody: { name, mimeType: "application/vnd.google-apps.folder", ...(parentId ? { parents: [parentId] } : {}) },
+    fields: "id",
+  });
+  return folder.data.id!;
+}
+
+export async function uploadInvoice(
+  accessToken: string,
+  fileName: string,
+  mimeType: string,
+  buffer: Buffer,
+  direction: "recibida" | "emitida",
+  month: string
+): Promise<{ fileId: string; webViewLink: string }> {
+  const drive = getDrive(accessToken);
+  const rootId   = await getOrCreateFolder(accessToken, FACTURAS_FOLDER_NAME);
+  const dirId    = await getOrCreateFolder(accessToken, direction === "emitida" ? "Emitidas" : "Recibidas", rootId);
+  const monthId  = await getOrCreateFolder(accessToken, month, dirId);
+
+  const { Readable } = await import("stream");
+  const file = await drive.files.create({
+    requestBody: { name: fileName, parents: [monthId] },
+    media: { mimeType, body: Readable.from(buffer) },
+    fields: "id, webViewLink",
+  });
+  await drive.permissions.create({
+    fileId: file.data.id!,
+    requestBody: { role: "reader", type: "anyone" },
+  });
+  return { fileId: file.data.id!, webViewLink: file.data.webViewLink! };
+}
+
 export async function deleteVoucher(accessToken: string, fileId: string): Promise<void> {
   const drive = getDrive(accessToken);
   await drive.files.delete({ fileId });
