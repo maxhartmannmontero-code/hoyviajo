@@ -73,8 +73,11 @@ const CHANNEL_CONFIG = [
 
 type MetricsFormData = Omit<MktMetrics, "id" | "createdAt">;
 
+const today = () => new Date().toISOString().slice(0, 10);
+const sevenDaysAgo = () => { const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString().slice(0, 10); };
+
 const EMPTY_METRICS = (month: string): MetricsFormData => ({
-  month, periodFrom: "", periodTo: "", webSessions: 0, webInquiries: 0,
+  month, periodFrom: sevenDaysAgo(), periodTo: today(), webSessions: 0, webInquiries: 0,
   rrssViews: 0, rrssReach: 0, rrssEngagements: 0, rrssNewFollowers: 0,
   wspConversations: 0, wspNewContacts: 0, wspCatalogViews: 0, wspStatusViews: 0, emailSent: 0, emailOpens: 0,
   emailClicks: 0, otrosNotes: "",
