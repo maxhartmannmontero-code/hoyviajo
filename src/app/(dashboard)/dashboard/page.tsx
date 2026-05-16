@@ -1,7 +1,10 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
-import { Users, Bell, DollarSign, UserPlus, CheckCircle, CalendarCheck, Target, Globe, TrendingUp, Eye, EyeOff, ShoppingBag, Hash, AlertCircle } from "lucide-react";
+import {
+  Users, Bell, DollarSign, UserPlus, CheckCircle, CalendarCheck,
+  Target, Globe, TrendingUp, Eye, EyeOff, ShoppingBag, Hash, AlertCircle,
+} from "lucide-react";
 import { Contact, Activity, Deal, Sale, Expense, Voucher, WeeklyKPI } from "@/types";
 import { formatCurrency, CONTACT_STATUS_COLORS, CONTACT_STATUS_LABELS } from "@/lib/utils";
 
@@ -10,51 +13,77 @@ const META = 4_000_000;
 const fmtCLP = (n: number) =>
   new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(n);
 
+/* â”€â”€ StatCard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 interface StatCardProps {
   icon: React.ReactNode;
   label: string;
   value: string | number;
   sub?: string;
-  accent: string;
   iconBg: string;
   alert?: boolean;
+  delay?: string;
 }
 
-function StatCard({ icon, label, value, sub, accent, iconBg, alert }: StatCardProps) {
+function StatCard({ icon, label, value, sub, iconBg, alert, delay }: StatCardProps) {
   return (
-    <div className={`bg-white rounded-xl border border-gray-100 border-l-4 ${accent} p-5 flex items-start gap-4 shadow-sm hover:shadow-md transition-shadow ${alert ? "ring-1 ring-red-200" : ""}`}>
-      <div className={`p-2.5 rounded-xl ${iconBg} flex-shrink-0`}>{icon}</div>
-      <div className="min-w-0">
-        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide leading-none mb-1.5">{label}</p>
-        <p className="text-2xl font-bold text-gray-900 leading-none">{value}</p>
-        {sub && <p className="text-xs text-gray-400 mt-1.5">{sub}</p>}
+    <div
+      className={[
+        "group relative bg-[#FEFCF8] rounded-2xl p-5",
+        "border border-[#E5DDD2]/70",
+        "shadow-[0_1px_3px_rgba(30,37,51,0.04),0_4px_18px_rgba(30,37,51,0.05)]",
+        "hover:shadow-[0_6px_24px_rgba(30,37,51,0.09),0_12px_40px_rgba(30,37,51,0.06)]",
+        "hover:-translate-y-0.5 transition-all duration-300 cursor-default",
+        "anim-fade-up",
+        alert ? "ring-1 ring-red-300/60" : "",
+        delay ?? "",
+      ].join(" ")}
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className={`p-2.5 rounded-xl ${iconBg} transition-transform duration-300 group-hover:scale-[1.08]`}>
+          {icon}
+        </div>
       </div>
+      <p className="text-[10px] font-semibold text-[#9EA9BA] uppercase tracking-[0.14em] mb-1.5">{label}</p>
+      <p className="font-mono text-[1.65rem] font-semibold text-[#1E2533] leading-none tabular-nums">{value}</p>
+      {sub && <p className="text-[11.5px] text-[#9EA9BA] mt-2 leading-relaxed">{sub}</p>}
     </div>
   );
 }
 
+/* â”€â”€ SectionTitle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+function SectionTitle({ children, accent }: { children: React.ReactNode; accent: string }) {
+  return (
+    <h2 className="font-sans text-[1.15rem] font-semibold text-[#1E2533] mb-4 flex items-center gap-2.5 leading-none">
+      <span className={`w-[3px] h-5 rounded-full flex-shrink-0 ${accent}`} />
+      {children}
+    </h2>
+  );
+}
+
+/* â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export default function DashboardPage() {
-  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [contacts, setContacts]   = useState<Contact[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [deals, setDeals] = useState<Deal[]>([]);
-  const [sales, setSales] = useState<Sale[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [vouchers, setVouchers] = useState<Voucher[]>([]);
-  const [kpis, setKpis] = useState<WeeklyKPI[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [gaData, setGaData] = useState<{ sessions: number; users: number } | null>(null);
-  const [masked, setMasked] = useState(false);
-  const hide = (v: string) => masked ? "••••••" : v;
+  const [deals, setDeals]         = useState<Deal[]>([]);
+  const [sales, setSales]         = useState<Sale[]>([]);
+  const [expenses, setExpenses]   = useState<Expense[]>([]);
+  const [vouchers, setVouchers]   = useState<Voucher[]>([]);
+  const [kpis, setKpis]           = useState<WeeklyKPI[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [gaData, setGaData]       = useState<{ sessions: number; users: number } | null>(null);
+  const [masked, setMasked]       = useState(false);
+
+  const hide = (v: string) => (masked ? "â€¢â€¢â€¢â€¢â€¢" : v);
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/contacts").then((r) => r.ok ? r.json() : []),
-      fetch("/api/activities").then((r) => r.ok ? r.json() : []),
-      fetch("/api/deals").then((r) => r.ok ? r.json() : []),
-      fetch("/api/sales").then((r) => r.ok ? r.json() : []),
-      fetch("/api/expenses").then((r) => r.ok ? r.json() : []),
-      fetch("/api/vouchers").then((r) => r.ok ? r.json() : []),
-      fetch("/api/kpis").then((r) => r.ok ? r.json() : []),
+      fetch("/api/contacts").then(r => r.ok ? r.json() : []),
+      fetch("/api/activities").then(r => r.ok ? r.json() : []),
+      fetch("/api/deals").then(r => r.ok ? r.json() : []),
+      fetch("/api/sales").then(r => r.ok ? r.json() : []),
+      fetch("/api/expenses").then(r => r.ok ? r.json() : []),
+      fetch("/api/vouchers").then(r => r.ok ? r.json() : []),
+      fetch("/api/kpis").then(r => r.ok ? r.json() : []),
     ]).then(([c, a, d, s, e, v, k]) => {
       setContacts(Array.isArray(c) ? c : []);
       setActivities(Array.isArray(a) ? a : []);
@@ -73,10 +102,10 @@ export default function DashboardPage() {
     const start = `${thisMonth}-01`;
     const end = now.toISOString().slice(0, 10);
     fetch(`/api/analytics?start=${start}&end=${end}`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
         if (Array.isArray(data)) {
-          const row = data.find((d) => d.month === thisMonth);
+          const row = data.find(d => d.month === thisMonth);
           if (row) setGaData({ sessions: Math.round(row.sessions), users: Math.round(row.activeUsers) });
         }
       })
@@ -85,400 +114,499 @@ export default function DashboardPage() {
 
   const now = new Date();
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const monthLabel = now.toLocaleDateString("es-CL", { month: "long", year: "numeric" });
 
-  // ── Sales metrics ──
+  /* â”€â”€ Metrics â”€â”€ */
   const emitidas = (s: Sale) => s.status.toLowerCase().includes("emitid");
 
-  const monthSales = sales.filter((s) => {
+  const monthSales = sales.filter(s => {
     const d = s.saleDate || s.createdAt || "";
     return d.startsWith(thisMonth) && emitidas(s);
   });
   const monthSalesAmount = monthSales.reduce((sum, s) => sum + s.amount, 0);
-  const monthSalesCount = monthSales.length;
-  const avgTicket = monthSalesCount > 0 ? monthSalesAmount / monthSalesCount : 0;
-
+  const monthSalesCount  = monthSales.length;
+  const avgTicket        = monthSalesCount > 0 ? monthSalesAmount / monthSalesCount : 0;
   const monthCommissions = monthSales.reduce((sum, s) => sum + s.commission, 0);
-  const monthExpTotal = expenses
-    .filter((e) => e.month === thisMonth)
-    .reduce((sum, e) => sum + e.amount, 0);
+  const monthExpTotal    = expenses.filter(e => e.month === thisMonth).reduce((sum, e) => sum + e.amount, 0);
 
-  // Days since last emitida sale
   const sortedEmitidas = [...sales]
     .filter(emitidas)
     .sort((a, b) => (b.saleDate || b.createdAt || "").localeCompare(a.saleDate || a.createdAt || ""));
-  const lastSaleDate = sortedEmitidas[0]?.saleDate || sortedEmitidas[0]?.createdAt || null;
+  const lastSaleDate  = sortedEmitidas[0]?.saleDate || sortedEmitidas[0]?.createdAt || null;
   const daysSinceSale = lastSaleDate
     ? Math.floor((now.getTime() - new Date(lastSaleDate + "T12:00:00").getTime()) / 86400000)
     : null;
-
-  // Recent sales (last 5)
   const recentSales = sortedEmitidas.slice(0, 5);
 
-  // ── Meta calculations (based on sales, not net) ──
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const daysPassed = now.getDate();
-  const daysLeft = daysInMonth - daysPassed;
-  const metaPct = Math.min((monthSalesAmount / META) * 100, 100);
+  const daysPassed  = now.getDate();
+  const daysLeft    = daysInMonth - daysPassed;
+  const metaPct     = Math.min((monthSalesAmount / META) * 100, 100);
   const expectedPct = (daysPassed / daysInMonth) * 100;
-  const onTrack = metaPct >= expectedPct;
-  const remaining = Math.max(META - monthSalesAmount, 0);
+  const onTrack     = metaPct >= expectedPct;
+  const remaining   = Math.max(META - monthSalesAmount, 0);
   const dailyNeeded = daysLeft > 0 ? remaining / daysLeft : 0;
-  const projected = daysPassed > 0 ? (monthSalesAmount / daysPassed) * daysInMonth : 0;
+  const projected   = daysPassed > 0 ? (monthSalesAmount / daysPassed) * daysInMonth : 0;
 
-  // ── Contacts ──
-  const newThisMonth = contacts.filter((c) => c.createdAt?.startsWith(thisMonth)).length;
-  const pendingFollowUps = activities.filter((a) => a.status === "pendiente").length;
-
-  const recentContacts = [...contacts]
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .slice(0, 5);
-
+  const newThisMonth      = contacts.filter(c => c.createdAt?.startsWith(thisMonth)).length;
+  const pendingFollowUps  = activities.filter(a => a.status === "pendiente").length;
+  const recentContacts    = [...contacts].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5);
   const upcomingFollowUps = activities
-    .filter((a) => a.status === "pendiente" && a.nextFollowUp)
+    .filter(a => a.status === "pendiente" && a.nextFollowUp)
     .sort((a, b) => a.nextFollowUp.localeCompare(b.nextFollowUp))
     .slice(0, 5);
 
-  const today = now.toISOString().slice(0, 10);
+  const today       = now.toISOString().slice(0, 10);
   const upcomingTrips = vouchers
-    .filter((v) => v.checkIn && v.checkIn >= today)
+    .filter(v => v.checkIn && v.checkIn >= today)
     .sort((a, b) => a.checkIn.localeCompare(b.checkIn))
     .slice(0, 4);
 
   const weekStart = (() => {
-    const d = new Date(now);
+    const d   = new Date(now);
     const day = d.getDay();
     d.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
     return d.toISOString().slice(0, 10);
   })();
-  const weekKPI = kpis.find((k) => k.weekStart === weekStart);
+  const weekKPI = kpis.find(k => k.weekStart === weekStart);
   const KPI_SUMMARY = [
-    { key: "bni11s" as keyof WeeklyKPI,       label: "BNI 1-a-1s",   target: 8  },
-    { key: "cotizaciones" as keyof WeeklyKPI, label: "Cotizaciones", target: 3  },
-    { key: "cierres" as keyof WeeklyKPI,      label: "Cierres",      target: 1  },
-    { key: "presenciales" as keyof WeeklyKPI, label: "Presenciales", target: 5  },
+    { key: "bni11s"       as keyof WeeklyKPI, label: "BNI 1-a-1s",   target: 8 },
+    { key: "cotizaciones" as keyof WeeklyKPI, label: "Cotizaciones", target: 3 },
+    { key: "cierres"      as keyof WeeklyKPI, label: "Cierres",      target: 1 },
+    { key: "presenciales" as keyof WeeklyKPI, label: "Presenciales", target: 5 },
   ];
 
-  // suppress unused warning
   void deals;
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin w-8 h-8 border-4 border-[#3c93d6] border-t-transparent rounded-full" />
+      <div className="flex items-center justify-center h-full bg-[#F2EDE5]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 rounded-full border-[3px] border-[#C89035]/30 border-t-[#C89035] animate-spin" />
+          <p className="font-sans text-lg text-[#1E2533]/50 italic">Cargando datosâ€¦</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 lg:p-8 min-h-full bg-slate-50/60">
+    <div className="min-h-full bg-[#F2EDE5]">
+      <div className="max-w-7xl mx-auto p-6 lg:p-8 space-y-6">
 
-      {/* ── Header ── */}
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <p className="text-xs font-semibold text-[#3c93d6] uppercase tracking-widest mb-1.5">
-            {now.toLocaleDateString("es-CL", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-          </p>
-          <h1 className="text-3xl font-bold text-gray-900 leading-tight">Dashboard</h1>
-          <p className="text-gray-400 text-sm mt-1">Resumen general · Hoy Viajo CRM</p>
-        </div>
-        <button
-          onClick={() => setMasked((v) => !v)}
-          className={`mt-1 flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition-colors ${masked ? "bg-gray-100 border-gray-200 text-gray-500" : "border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300"}`}
-        >
-          {masked ? <EyeOff size={15} /> : <Eye size={15} />}
-          {masked ? "Mostrar" : "Ocultar"}
-        </button>
-      </div>
-
-      {/* ── META HERO ── */}
-      <div className="mb-6 bg-gradient-to-r from-[#0f2744] to-[#1a4a7a] rounded-2xl p-6 shadow-xl">
-        <div className="flex items-start justify-between mb-4">
+        {/* â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        <div className="flex items-start justify-between anim-fade-up d-0">
           <div>
-            <p className="text-xs font-semibold text-blue-300 uppercase tracking-widest mb-1">
-              Meta mensual · {now.toLocaleDateString("es-CL", { month: "long", year: "numeric" })}
+            <p className="text-[10.5px] font-semibold text-[#C89035] uppercase tracking-[0.2em] mb-2">
+              {now.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
             </p>
-            <div className="flex items-end gap-3">
-              <span className="text-4xl font-bold text-white">{hide(fmtCLP(monthSalesAmount))}</span>
-              <span className="text-blue-300 text-lg mb-1">/ {hide(fmtCLP(META))}</span>
-            </div>
-            <p className="text-blue-400 text-xs mt-1">ventas emitidas del mes</p>
+            <h1 className="font-sans text-[2.6rem] font-bold text-[#1E2533] leading-none tracking-tight">
+              Dashboard
+            </h1>
+            <p className="text-[13px] text-[#9EA9BA] mt-1.5 font-light tracking-wide">
+              Resumen general Â· Hoy Viajo CRM
+            </p>
           </div>
-          <div className="text-right">
-            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${onTrack ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
-              <div className={`w-1.5 h-1.5 rounded-full ${onTrack ? "bg-emerald-400" : "bg-red-400"}`} />
-              {onTrack ? "En ritmo" : "Por debajo"}
-            </div>
-            <p className="text-blue-300 text-xs mt-2">{daysLeft} días restantes</p>
-          </div>
+          <button
+            onClick={() => setMasked(v => !v)}
+            className={[
+              "mt-2 flex items-center gap-2 px-3.5 py-2 rounded-xl border text-[12.5px] font-medium transition-all duration-200",
+              masked
+                ? "bg-[#1E2533]/[0.06] border-[#1E2533]/15 text-[#1E2533]/60"
+                : "border-[#E5DDD2] text-[#9EA9BA] hover:text-[#1E2533]/60 hover:border-[#C8C0B6] bg-[#FEFCF8]",
+            ].join(" ")}
+          >
+            {masked ? <EyeOff size={14} /> : <Eye size={14} />}
+            {masked ? "Mostrar" : "Ocultar"}
+          </button>
         </div>
 
-        <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden mb-4">
+        {/* â”€â”€ META HERO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        <div
+          className="relative rounded-2xl overflow-hidden anim-fade-up d-100"
+          style={{ background: "linear-gradient(135deg, #091525 0%, #0F2240 55%, #122C50 100%)" }}
+        >
+          {/* Decorative rings */}
+          <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full border border-white/[0.04]" />
+          <div className="absolute -right-8 -top-8 w-48 h-48 rounded-full border border-white/[0.04]" />
+          {/* Decorative percentage ghost */}
           <div
-            className={`h-3 rounded-full transition-all ${metaPct >= 100 ? "bg-emerald-400" : metaPct >= 75 ? "bg-[#3c93d6]" : metaPct >= 50 ? "bg-yellow-400" : metaPct >= 25 ? "bg-orange-400" : "bg-red-400"}`}
-            style={{ width: `${Math.max(metaPct, 2)}%` }}
-          />
-        </div>
-
-        <div className="grid grid-cols-4 gap-4">
-          <div>
-            <p className="text-xs text-blue-300 mb-0.5">Avance</p>
-            <p className="text-lg font-bold text-white">{masked ? "••%" : `${metaPct.toFixed(0)}%`}</p>
+            className="absolute right-0 top-0 bottom-0 flex items-center pr-10 select-none pointer-events-none"
+            aria-hidden
+          >
+            <span
+              className="font-sans font-bold text-white/[0.04] leading-none"
+              style={{ fontSize: "clamp(80px, 12vw, 140px)" }}
+            >
+              {masked ? "â€”" : `${metaPct.toFixed(0)}%`}
+            </span>
           </div>
-          <div>
-            <p className="text-xs text-blue-300 mb-0.5">Operaciones</p>
-            <p className="text-lg font-bold text-white">{monthSalesCount} ventas</p>
-          </div>
-          <div>
-            <p className="text-xs text-blue-300 mb-0.5">Ticket promedio</p>
-            <p className="text-lg font-bold text-white">{avgTicket > 0 ? hide(fmtCLP(avgTicket)) : "—"}</p>
-          </div>
-          <div>
-            <p className="text-xs text-blue-300 mb-0.5">Proyección</p>
-            <p className={`text-lg font-bold ${projected >= META ? "text-emerald-300" : "text-orange-300"}`}>{projected > 0 ? hide(fmtCLP(projected)) : "—"}</p>
-          </div>
-        </div>
-      </div>
+          {/* Subtle top line */}
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#ACFD46]/20 to-transparent" />
 
-      {/* ── KPI cards ── */}
-      <div className="grid grid-cols-2 xl:grid-cols-3 gap-4 mb-6">
-        <StatCard
-          icon={<ShoppingBag size={18} className="text-[#3c93d6]" />}
-          label="Ventas del mes"
-          value={hide(fmtCLP(monthSalesAmount))}
-          sub={`${monthSalesCount} operaciones emitidas`}
-          accent="border-l-[#3c93d6]"
-          iconBg="bg-[#ddeef9]"
-        />
-        <StatCard
-          icon={<Hash size={18} className="text-indigo-600" />}
-          label="Ticket promedio"
-          value={avgTicket > 0 ? hide(fmtCLP(avgTicket)) : "—"}
-          sub={monthSalesCount > 0 ? `sobre ${monthSalesCount} ventas` : "sin ventas este mes"}
-          accent="border-l-indigo-400"
-          iconBg="bg-indigo-50"
-        />
-        <StatCard
-          icon={<AlertCircle size={18} className={daysSinceSale !== null && daysSinceSale > 3 ? "text-red-500" : "text-emerald-500"} />}
-          label="Días sin venta"
-          value={daysSinceSale !== null ? `${daysSinceSale}d` : "—"}
-          sub={lastSaleDate ? `Última: ${new Date(lastSaleDate + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "short" })}` : "sin ventas registradas"}
-          accent={daysSinceSale !== null && daysSinceSale > 3 ? "border-l-red-400" : "border-l-emerald-400"}
-          iconBg={daysSinceSale !== null && daysSinceSale > 3 ? "bg-red-50" : "bg-emerald-50"}
-          alert={daysSinceSale !== null && daysSinceSale > 3}
-        />
-        <StatCard
-          icon={<DollarSign size={18} className="text-yellow-600" />}
-          label="Comisiones del mes"
-          value={hide(fmtCLP(monthCommissions))}
-          sub={monthExpTotal > 0 ? `Gastos: ${hide(fmtCLP(monthExpTotal))}` : "Sin gastos registrados"}
-          accent="border-l-yellow-400"
-          iconBg="bg-yellow-50"
-        />
-        <StatCard
-          icon={<Bell size={18} className="text-orange-500" />}
-          label="Follow-ups pendientes"
-          value={pendingFollowUps}
-          sub={pendingFollowUps > 0 ? "requieren atención" : "al día"}
-          accent="border-l-orange-400"
-          iconBg="bg-orange-50"
-        />
-        <StatCard
-          icon={<UserPlus size={18} className="text-green-600" />}
-          label="Contactos nuevos"
-          value={newThisMonth}
-          sub={`${contacts.filter((c) => c.status === "cliente").length} clientes activos`}
-          accent="border-l-green-500"
-          iconBg="bg-green-50"
-        />
-      </div>
+          <div className="relative px-7 pt-7 pb-6">
+            <div className="flex items-start justify-between mb-5">
+              <div>
+                <p className="text-[10px] font-semibold text-[#ACFD46]/70 uppercase tracking-[0.22em] mb-2">
+                  Meta mensual Â· {monthLabel}
+                </p>
+                <div className="flex items-end gap-3">
+                  <span className="font-sans text-[2.6rem] font-bold text-white leading-none tabular-nums">
+                    {hide(fmtCLP(monthSalesAmount))}
+                  </span>
+                  <span className="text-white/35 text-base mb-1.5 font-light">
+                    / {hide(fmtCLP(META))}
+                  </span>
+                </div>
+                <p className="text-white/35 text-[11px] mt-1.5 tracking-wide">ventas emitidas del mes</p>
+              </div>
 
-      {/* ── Bottom grid ── */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <div className="text-right mt-1 flex-shrink-0">
+                <div className={[
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold",
+                  onTrack
+                    ? "bg-[#ACFD46]/15 text-[#ACFD46] border border-[#ACFD46]/20"
+                    : "bg-red-500/15 text-red-300 border border-red-500/20",
+                ].join(" ")}>
+                  <div className={[
+                    "w-1.5 h-1.5 rounded-full",
+                    onTrack ? "bg-[#ACFD46]" : "bg-red-400",
+                  ].join(" ")} />
+                  {onTrack ? "En ritmo" : "Por debajo"}
+                </div>
+                <p className="text-white/30 text-[11px] mt-2 tracking-wide">{daysLeft} dÃ­as restantes</p>
+              </div>
+            </div>
 
-        {/* Últimas ventas */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <span className="w-1 h-4 rounded-full bg-[#3c93d6] inline-block flex-shrink-0" />
-            Últimas ventas
-          </h2>
-          {recentSales.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-6">No hay ventas emitidas aún</p>
-          ) : (
-            <div className="space-y-1">
-              {recentSales.map((s) => (
-                <div key={s.id} className="flex items-center gap-3 px-2 py-2.5 rounded-xl hover:bg-slate-50 transition-colors">
-                  <div className="w-9 h-9 rounded-xl bg-[#ddeef9] text-[#3c93d6] flex items-center justify-center flex-shrink-0">
-                    <TrendingUp size={15} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{s.product || "—"}</p>
-                    <p className="text-xs text-gray-400 truncate">{s.clientName || s.saleDate || "—"}</p>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-bold text-[#3c93d6]">{hide(fmtCLP(s.amount))}</p>
-                    {s.saleDate && (
-                      <p className="text-xs text-gray-400">
-                        {new Date(s.saleDate + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "short" })}
-                      </p>
-                    )}
-                  </div>
+            {/* Progress bar */}
+            <div className="w-full h-2 bg-white/[0.07] rounded-full overflow-hidden mb-5">
+              <div
+                className={[
+                  "h-2 rounded-full progress-animate",
+                  metaPct >= 100 ? "bg-[#ACFD46]"
+                  : metaPct >= 75 ? "bg-[#1A6EC0]"
+                  : metaPct >= 50 ? "bg-[#C89035]"
+                  : metaPct >= 25 ? "bg-orange-400"
+                  : "bg-red-400",
+                ].join(" ")}
+                style={{ width: `${Math.max(metaPct, 1.5)}%` }}
+              />
+            </div>
+
+            {/* Expected marker */}
+            <div className="relative -mt-6 mb-4 h-2" style={{ paddingLeft: `${Math.min(expectedPct, 97)}%` }}>
+              <div className="w-px h-3 bg-white/20 -mt-0.5" title={`Ritmo esperado: ${expectedPct.toFixed(0)}%`} />
+            </div>
+
+            {/* Stats grid */}
+            <div className="grid grid-cols-4 gap-4 pt-1">
+              {[
+                { label: "Avance",       value: masked ? "â€”" : `${metaPct.toFixed(0)}%` },
+                { label: "Operaciones",  value: `${monthSalesCount} ventas` },
+                { label: "Ticket prom.", value: avgTicket > 0 ? hide(fmtCLP(avgTicket)) : "â€”" },
+                {
+                  label: "ProyecciÃ³n",
+                  value: projected > 0 ? hide(fmtCLP(projected)) : "â€”",
+                  highlight: projected >= META ? "text-[#ACFD46]" : "text-orange-300",
+                },
+              ].map(({ label, value, highlight }) => (
+                <div key={label}>
+                  <p className="text-[10px] text-white/30 mb-1 tracking-wide">{label}</p>
+                  <p className={`font-mono text-[1.1rem] font-semibold tabular-nums ${highlight ?? "text-white"}`}>
+                    {value}
+                  </p>
                 </div>
               ))}
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Follow-ups + GA4 */}
-        <div className="flex flex-col gap-4">
-          {/* GA4 mini */}
-          <div className={`rounded-2xl border p-4 flex items-center gap-4 ${gaData ? "bg-white border-gray-100 shadow-sm" : "bg-slate-50 border-dashed border-slate-200"}`}>
-            <div className={`p-2.5 rounded-xl flex-shrink-0 ${gaData ? "bg-blue-50" : "bg-slate-100"}`}>
-              <Globe size={18} className={gaData ? "text-blue-500" : "text-slate-400"} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Visitas web este mes</p>
-              {gaData ? (
-                <div className="flex items-end gap-4 mt-1">
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900 leading-none">{gaData.sessions.toLocaleString("es-CL")}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">sesiones</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900 leading-none">{gaData.users.toLocaleString("es-CL")}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">usuarios</p>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-sm text-slate-400 mt-1">Sin datos GA4 aún</p>
-              )}
-            </div>
-          </div>
+        {/* â”€â”€ KPI Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
+          <StatCard
+            icon={<ShoppingBag size={17} className="text-[#1A6EC0]" />}
+            label="Ventas del mes"
+            value={hide(fmtCLP(monthSalesAmount))}
+            sub={`${monthSalesCount} operaciones emitidas`}
+            iconBg="bg-[#D4E8F9]"
+            delay="d-150"
+          />
+          <StatCard
+            icon={<Hash size={17} className="text-indigo-600" />}
+            label="Ticket promedio"
+            value={avgTicket > 0 ? hide(fmtCLP(avgTicket)) : "â€”"}
+            sub={monthSalesCount > 0 ? `sobre ${monthSalesCount} ventas` : "sin ventas este mes"}
+            iconBg="bg-indigo-50"
+            delay="d-200"
+          />
+          <StatCard
+            icon={<AlertCircle size={17} className={daysSinceSale !== null && daysSinceSale > 3 ? "text-red-500" : "text-[#0B7A6C]"} />}
+            label="DÃ­as sin venta"
+            value={daysSinceSale !== null ? `${daysSinceSale}d` : "â€”"}
+            sub={lastSaleDate
+              ? `Ãšltima: ${new Date(lastSaleDate + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "short" })}`
+              : "sin ventas registradas"}
+            iconBg={daysSinceSale !== null && daysSinceSale > 3 ? "bg-red-50" : "bg-[#D0EDE9]"}
+            alert={daysSinceSale !== null && daysSinceSale > 3}
+            delay="d-250"
+          />
+          <StatCard
+            icon={<DollarSign size={17} className="text-[#C89035]" />}
+            label="Comisiones del mes"
+            value={hide(fmtCLP(monthCommissions))}
+            sub={monthExpTotal > 0 ? `Gastos: ${hide(fmtCLP(monthExpTotal))}` : "Sin gastos registrados"}
+            iconBg="bg-[#FBF0D9]"
+            delay="d-300"
+          />
+          <StatCard
+            icon={<Bell size={17} className="text-orange-500" />}
+            label="Follow-ups pendientes"
+            value={pendingFollowUps}
+            sub={pendingFollowUps > 0 ? "requieren atenciÃ³n" : "todo al dÃ­a"}
+            iconBg="bg-orange-50"
+            delay="d-350"
+          />
+          <StatCard
+            icon={<UserPlus size={17} className="text-emerald-600" />}
+            label="Contactos nuevos"
+            value={newThisMonth}
+            sub={`${contacts.filter(c => c.status === "cliente").length} clientes activos`}
+            iconBg="bg-emerald-50"
+            delay="d-400"
+          />
+        </div>
 
-          {/* Follow-ups */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex-1">
-            <h2 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="w-1 h-4 rounded-full bg-orange-400 inline-block flex-shrink-0" />
-              Próximos Follow-ups
-            </h2>
-            {upcomingFollowUps.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-4">No hay follow-ups pendientes</p>
+        {/* â”€â”€ Bottom grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+
+          {/* Ãšltimas ventas */}
+          <div className="bg-[#FEFCF8] rounded-2xl border border-[#E5DDD2]/70 shadow-[0_1px_3px_rgba(30,37,51,0.04),0_4px_18px_rgba(30,37,51,0.04)] p-5 anim-fade-up d-200">
+            <SectionTitle accent="bg-[#1A6EC0]">Ãšltimas ventas</SectionTitle>
+            {recentSales.length === 0 ? (
+              <div className="flex flex-col items-center py-8 text-[#9EA9BA]">
+                <ShoppingBag size={28} className="mb-2 opacity-30" />
+                <p className="text-sm">No hay ventas emitidas aÃºn</p>
+              </div>
             ) : (
-              <div className="space-y-1">
-                {upcomingFollowUps.map((a) => (
-                  <div key={a.id} className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-50 transition-colors">
-                    <div className="w-9 h-9 rounded-full bg-orange-50 text-orange-400 flex items-center justify-center flex-shrink-0">
-                      <Bell size={14} />
+              <div className="space-y-0.5">
+                {recentSales.map(s => (
+                  <div
+                    key={s.id}
+                    className="flex items-center gap-3.5 px-2 py-2.5 rounded-xl hover:bg-[#F5F0E8] transition-colors"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-[#D4E8F9] text-[#1A6EC0] flex items-center justify-center flex-shrink-0">
+                      <TrendingUp size={15} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{a.contactName}</p>
-                      <p className="text-xs text-gray-400 truncate">{a.notes || a.type}</p>
+                      <p className="text-[13.5px] font-semibold text-[#1E2533] truncate">{s.product || "â€”"}</p>
+                      <p className="text-[11.5px] text-[#9EA9BA] truncate">{s.clientName || s.saleDate || "â€”"}</p>
                     </div>
-                    <p className="text-xs font-medium text-orange-500 whitespace-nowrap flex-shrink-0">
-                      {a.nextFollowUp ? new Date(a.nextFollowUp + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "short" }) : "-"}
-                    </p>
+                    <div className="text-right flex-shrink-0">
+                      <p className="font-mono text-[13.5px] font-semibold text-[#1A6EC0] tabular-nums">
+                        {hide(fmtCLP(s.amount))}
+                      </p>
+                      {s.saleDate && (
+                        <p className="text-[11px] text-[#9EA9BA] mt-0.5">
+                          {new Date(s.saleDate + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "short" })}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
-        </div>
 
-        {/* Contactos recientes */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <span className="w-1 h-4 rounded-full bg-green-500 inline-block flex-shrink-0" />
-            Contactos Recientes
-          </h2>
-          {recentContacts.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-6">No hay contactos aún</p>
-          ) : (
-            <div className="space-y-1">
-              {recentContacts.map((c) => (
-                <div key={c.id} className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-50 transition-colors">
-                  <div className="w-9 h-9 rounded-full bg-[#ddeef9] text-[#3c93d6] flex items-center justify-center font-bold text-sm flex-shrink-0">
-                    {c.name.charAt(0).toUpperCase()}
+          {/* GA4 + Follow-ups */}
+          <div className="flex flex-col gap-4">
+            {/* GA4 */}
+            <div className={[
+              "rounded-2xl border p-4 flex items-center gap-4",
+              gaData
+                ? "bg-[#FEFCF8] border-[#E5DDD2]/70 shadow-[0_1px_3px_rgba(30,37,51,0.04)]"
+                : "bg-[#F5F0E8] border-dashed border-[#D5CCC1]",
+              "anim-fade-up d-250",
+            ].join(" ")}>
+              <div className={`p-2.5 rounded-xl flex-shrink-0 ${gaData ? "bg-[#D4E8F9]" : "bg-[#E5DDD2]"}`}>
+                <Globe size={17} className={gaData ? "text-[#1A6EC0]" : "text-[#9EA9BA]"} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-semibold text-[#9EA9BA] uppercase tracking-[0.14em] mb-1">
+                  Visitas web este mes
+                </p>
+                {gaData ? (
+                  <div className="flex items-end gap-5">
+                    <div>
+                      <p className="font-mono text-[1.5rem] font-semibold text-[#1E2533] tabular-nums leading-none">
+                        {gaData.sessions.toLocaleString("es-CL")}
+                      </p>
+                      <p className="text-[11px] text-[#9EA9BA] mt-0.5">sesiones</p>
+                    </div>
+                    <div>
+                      <p className="font-mono text-[1.5rem] font-semibold text-[#1E2533] tabular-nums leading-none">
+                        {gaData.users.toLocaleString("es-CL")}
+                      </p>
+                      <p className="text-[11px] text-[#9EA9BA] mt-0.5">usuarios Ãºnicos</p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{c.name}</p>
-                    <p className="text-xs text-gray-400 truncate">{c.company || c.email}</p>
-                  </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${CONTACT_STATUS_COLORS[c.status]}`}>
-                    {CONTACT_STATUS_LABELS[c.status]}
-                  </span>
-                </div>
-              ))}
+                ) : (
+                  <p className="text-[13px] text-[#9EA9BA] italic">Sin datos GA4 aÃºn</p>
+                )}
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* Próximos viajes + KPIs */}
-        <div className="flex flex-col gap-4">
-          {/* Trips */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <h2 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <CalendarCheck size={16} className="text-blue-500" />
-              Próximos Viajes
-            </h2>
-            {upcomingTrips.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-4">No hay viajes próximos</p>
-            ) : (
-              <div className="space-y-1">
-                {upcomingTrips.map((v) => {
-                  const checkInDate = new Date(v.checkIn + "T12:00:00");
-                  return (
-                    <div key={v.id} className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-50 transition-colors">
-                      <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex flex-col items-center justify-center flex-shrink-0 border border-blue-100">
-                        <span className="text-sm font-bold leading-none">{checkInDate.getDate()}</span>
-                        <span className="text-[10px] uppercase text-blue-400 leading-none mt-0.5">
-                          {checkInDate.toLocaleDateString("es-CL", { month: "short" })}
-                        </span>
+            {/* Follow-ups */}
+            <div className="bg-[#FEFCF8] rounded-2xl border border-[#E5DDD2]/70 shadow-[0_1px_3px_rgba(30,37,51,0.04),0_4px_18px_rgba(30,37,51,0.04)] p-5 flex-1 anim-fade-up d-300">
+              <SectionTitle accent="bg-orange-400">PrÃ³ximos Follow-ups</SectionTitle>
+              {upcomingFollowUps.length === 0 ? (
+                <div className="flex flex-col items-center py-5 text-[#9EA9BA]">
+                  <CheckCircle size={24} className="mb-1.5 opacity-30" />
+                  <p className="text-sm">No hay follow-ups pendientes</p>
+                </div>
+              ) : (
+                <div className="space-y-0.5">
+                  {upcomingFollowUps.map(a => (
+                    <div
+                      key={a.id}
+                      className="flex items-center gap-3.5 px-2 py-2.5 rounded-xl hover:bg-[#F5F0E8] transition-colors"
+                    >
+                      <div className="w-9 h-9 rounded-full bg-orange-50 text-orange-400 flex items-center justify-center flex-shrink-0">
+                        <Bell size={14} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate">{v.contactName}</p>
-                        <p className="text-xs text-gray-400 truncate">{v.description || v.fileName}</p>
+                        <p className="text-[13.5px] font-semibold text-[#1E2533] truncate">{a.contactName}</p>
+                        <p className="text-[11.5px] text-[#9EA9BA] truncate">{a.notes || a.type}</p>
                       </div>
-                      {v.checkOut && <p className="text-xs text-gray-400 flex-shrink-0">→ {v.checkOut}</p>}
+                      <p className="text-[11.5px] font-semibold text-orange-500 whitespace-nowrap flex-shrink-0">
+                        {a.nextFollowUp
+                          ? new Date(a.nextFollowUp + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "short" })
+                          : "â€”"}
+                      </p>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Contactos recientes */}
+          <div className="bg-[#FEFCF8] rounded-2xl border border-[#E5DDD2]/70 shadow-[0_1px_3px_rgba(30,37,51,0.04),0_4px_18px_rgba(30,37,51,0.04)] p-5 anim-fade-up d-250">
+            <SectionTitle accent="bg-emerald-500">Contactos Recientes</SectionTitle>
+            {recentContacts.length === 0 ? (
+              <div className="flex flex-col items-center py-8 text-[#9EA9BA]">
+                <Users size={28} className="mb-2 opacity-30" />
+                <p className="text-sm">No hay contactos aÃºn</p>
+              </div>
+            ) : (
+              <div className="space-y-0.5">
+                {recentContacts.map(c => (
+                  <div
+                    key={c.id}
+                    className="flex items-center gap-3.5 px-2 py-2.5 rounded-xl hover:bg-[#F5F0E8] transition-colors"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-[#D4E8F9] text-[#1A6EC0] flex items-center justify-center font-bold text-[13px] flex-shrink-0">
+                      {c.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13.5px] font-semibold text-[#1E2533] truncate">{c.name}</p>
+                      <p className="text-[11.5px] text-[#9EA9BA] truncate">{c.company || c.email}</p>
+                    </div>
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold flex-shrink-0 ${CONTACT_STATUS_COLORS[c.status]}`}>
+                      {CONTACT_STATUS_LABELS[c.status]}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
 
-          {/* Weekly KPIs */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <h2 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
-              <Target size={16} className="text-purple-500" />
-              Actividad esta semana
-            </h2>
-            {!weekKPI ? (
-              <p className="text-sm text-gray-400 text-center py-4">Sin registrar — ve a Marketing → KPIs</p>
-            ) : (
-              <div className="space-y-3 mt-3">
-                {KPI_SUMMARY.map(({ key, label, target }) => {
-                  const value = Number(weekKPI[key]) || 0;
-                  const pct = Math.min((value / target) * 100, 100);
-                  const color = pct >= 100 ? "bg-emerald-500" : pct >= 60 ? "bg-[#3c93d6]" : pct >= 30 ? "bg-yellow-400" : "bg-gray-200";
-                  return (
-                    <div key={key}>
-                      <div className="flex justify-between text-xs mb-1.5">
-                        <span className="font-medium text-gray-700">{label}</span>
-                        <span className={pct >= 100 ? "font-bold text-emerald-600" : "font-semibold text-gray-500"}>
-                          {value}<span className="text-gray-400 font-normal">/{target}</span>
-                        </span>
+          {/* PrÃ³ximos viajes + Weekly KPIs */}
+          <div className="flex flex-col gap-4">
+
+            {/* Trips */}
+            <div className="bg-[#FEFCF8] rounded-2xl border border-[#E5DDD2]/70 shadow-[0_1px_3px_rgba(30,37,51,0.04),0_4px_18px_rgba(30,37,51,0.04)] p-5 anim-fade-up d-300">
+              <SectionTitle accent="bg-[#1A6EC0]">PrÃ³ximos Viajes</SectionTitle>
+              {upcomingTrips.length === 0 ? (
+                <div className="flex flex-col items-center py-5 text-[#9EA9BA]">
+                  <CalendarCheck size={24} className="mb-1.5 opacity-30" />
+                  <p className="text-sm">No hay viajes prÃ³ximos</p>
+                </div>
+              ) : (
+                <div className="space-y-0.5">
+                  {upcomingTrips.map(v => {
+                    const checkInDate = new Date(v.checkIn + "T12:00:00");
+                    return (
+                      <div
+                        key={v.id}
+                        className="flex items-center gap-3.5 px-2 py-2 rounded-xl hover:bg-[#F5F0E8] transition-colors"
+                      >
+                        <div className="w-11 h-11 rounded-xl bg-[#D4E8F9] text-[#1A6EC0] flex flex-col items-center justify-center flex-shrink-0 border border-[#BDD8F3]">
+                          <span className="text-[13px] font-bold leading-none">{checkInDate.getDate()}</span>
+                          <span className="text-[9px] uppercase text-[#1A6EC0]/60 leading-none mt-0.5 tracking-wider">
+                            {checkInDate.toLocaleDateString("es-CL", { month: "short" })}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13.5px] font-semibold text-[#1E2533] truncate">{v.contactName}</p>
+                          <p className="text-[11.5px] text-[#9EA9BA] truncate">{v.description || v.fileName}</p>
+                        </div>
+                        {v.checkOut && (
+                          <p className="text-[11px] text-[#9EA9BA] flex-shrink-0">
+                            â†’ {v.checkOut}
+                          </p>
+                        )}
                       </div>
-                      <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div className={`h-2 rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Weekly KPIs */}
+            <div className="bg-[#FEFCF8] rounded-2xl border border-[#E5DDD2]/70 shadow-[0_1px_3px_rgba(30,37,51,0.04),0_4px_18px_rgba(30,37,51,0.04)] p-5 anim-fade-up d-350">
+              <SectionTitle accent="bg-purple-500">Actividad esta semana</SectionTitle>
+              {!weekKPI ? (
+                <div className="flex flex-col items-center py-5 text-[#9EA9BA]">
+                  <Target size={24} className="mb-1.5 opacity-30" />
+                  <p className="text-sm text-center">Sin registrar â€” ve a Marketing â†’ KPIs</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {KPI_SUMMARY.map(({ key, label, target }) => {
+                    const value = Number(weekKPI[key]) || 0;
+                    const pct   = Math.min((value / target) * 100, 100);
+                    const barColor =
+                      pct >= 100 ? "bg-[#ACFD46]"
+                      : pct >= 60  ? "bg-[#1A6EC0]"
+                      : pct >= 30  ? "bg-[#C89035]"
+                      : "bg-[#E5DDD2]";
+                    return (
+                      <div key={key}>
+                        <div className="flex justify-between items-baseline mb-2">
+                          <span className="text-[12.5px] font-medium text-[#1E2533]/80">{label}</span>
+                          <span className="font-mono text-[12px] tabular-nums text-[#9EA9BA]">
+                            <span className={pct >= 100 ? "text-[#0B7A6C] font-semibold" : "text-[#1E2533] font-semibold"}>
+                              {value}
+                            </span>
+                            <span className="text-[#C8C0B6]">/{target}</span>
+                          </span>
+                        </div>
+                        <div className="w-full h-[5px] bg-[#EDE7DF] rounded-full overflow-hidden">
+                          <div
+                            className={`h-[5px] rounded-full transition-all duration-700 ${barColor}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
-
       </div>
     </div>
   );
 }
+
