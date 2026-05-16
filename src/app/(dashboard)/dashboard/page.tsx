@@ -44,7 +44,7 @@ function StatCard({ icon, label, value, sub, iconBg, alert, delay }: StatCardPro
         </div>
       </div>
       <p className="text-[10px] font-semibold text-[#9EA9BA] uppercase tracking-[0.14em] mb-1.5">{label}</p>
-      <p className="font-mono text-[1.65rem] font-semibold text-[#1E2533] leading-none tabular-nums">{value}</p>
+      <p className="font-sans text-[1.65rem] font-bold text-[#1E2533] leading-none tabular-nums tracking-tight">{value}</p>
       {sub && <p className="text-[11.5px] text-[#9EA9BA] mt-2 leading-relaxed">{sub}</p>}
     </div>
   );
@@ -203,7 +203,7 @@ export default function DashboardPage() {
               Dashboard
             </h1>
             <p className="text-[13px] text-[#9EA9BA] mt-1.5 font-light tracking-wide">
-              Resumen general Â· Hoy Viajo CRM
+              Resumen general · Hoy Viajo CRM
             </p>
           </div>
           <button
@@ -247,7 +247,7 @@ export default function DashboardPage() {
             <div className="flex items-start justify-between mb-5">
               <div>
                 <p className="text-[10px] font-semibold text-[#ACFD46]/70 uppercase tracking-[0.22em] mb-2">
-                  Meta mensual Â· {monthLabel}
+                  Meta mensual · {monthLabel}
                 </p>
                 <div className="flex items-end gap-3">
                   <span className="font-sans text-[2.6rem] font-bold text-white leading-none tabular-nums">
@@ -273,7 +273,7 @@ export default function DashboardPage() {
                   ].join(" ")} />
                   {onTrack ? "En ritmo" : "Por debajo"}
                 </div>
-                <p className="text-white/30 text-[11px] mt-2 tracking-wide">{daysLeft} dÃ­as restantes</p>
+                <p className="text-white/30 text-[11px] mt-2 tracking-wide">{daysLeft} días restantes</p>
               </div>
             </div>
 
@@ -304,7 +304,7 @@ export default function DashboardPage() {
                 { label: "Operaciones",  value: `${monthSalesCount} ventas` },
                 { label: "Ticket prom.", value: avgTicket > 0 ? hide(fmtCLP(avgTicket)) : "â€”" },
                 {
-                  label: "ProyecciÃ³n",
+                  label: "Proyección",
                   value: projected > 0 ? hide(fmtCLP(projected)) : "â€”",
                   highlight: projected >= META ? "text-[#ACFD46]" : "text-orange-300",
                 },
@@ -340,10 +340,10 @@ export default function DashboardPage() {
           />
           <StatCard
             icon={<AlertCircle size={17} className={daysSinceSale !== null && daysSinceSale > 3 ? "text-red-500" : "text-[#0B7A6C]"} />}
-            label="DÃ­as sin venta"
+            label="Días sin venta"
             value={daysSinceSale !== null ? `${daysSinceSale}d` : "â€”"}
             sub={lastSaleDate
-              ? `Ãšltima: ${new Date(lastSaleDate + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "short" })}`
+              ? `Última: ${new Date(lastSaleDate + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "short" })}`
               : "sin ventas registradas"}
             iconBg={daysSinceSale !== null && daysSinceSale > 3 ? "bg-red-50" : "bg-[#D0EDE9]"}
             alert={daysSinceSale !== null && daysSinceSale > 3}
@@ -361,7 +361,7 @@ export default function DashboardPage() {
             icon={<Bell size={17} className="text-orange-500" />}
             label="Follow-ups pendientes"
             value={pendingFollowUps}
-            sub={pendingFollowUps > 0 ? "requieren atenciÃ³n" : "todo al dÃ­a"}
+            sub={pendingFollowUps > 0 ? "requieren atención" : "todo al día"}
             iconBg="bg-orange-50"
             delay="d-350"
           />
@@ -378,13 +378,13 @@ export default function DashboardPage() {
         {/* â”€â”€ Bottom grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
 
-          {/* Ãšltimas ventas */}
+          {/* Últimas ventas */}
           <div className="bg-[#FEFCF8] rounded-2xl border border-[#E5DDD2]/70 shadow-[0_1px_3px_rgba(30,37,51,0.04),0_4px_18px_rgba(30,37,51,0.04)] p-5 anim-fade-up d-200">
-            <SectionTitle accent="bg-[#1A6EC0]">Ãšltimas ventas</SectionTitle>
+            <SectionTitle accent="bg-[#1A6EC0]">Últimas ventas</SectionTitle>
             {recentSales.length === 0 ? (
               <div className="flex flex-col items-center py-8 text-[#9EA9BA]">
                 <ShoppingBag size={28} className="mb-2 opacity-30" />
-                <p className="text-sm">No hay ventas emitidas aÃºn</p>
+                <p className="text-sm">No hay ventas emitidas aún</p>
               </div>
             ) : (
               <div className="space-y-0.5">
@@ -445,18 +445,18 @@ export default function DashboardPage() {
                       <p className="font-mono text-[1.5rem] font-semibold text-[#1E2533] tabular-nums leading-none">
                         {gaData.users.toLocaleString("es-CL")}
                       </p>
-                      <p className="text-[11px] text-[#9EA9BA] mt-0.5">usuarios Ãºnicos</p>
+                      <p className="text-[11px] text-[#9EA9BA] mt-0.5">usuarios únicos</p>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-[13px] text-[#9EA9BA] italic">Sin datos GA4 aÃºn</p>
+                  <p className="text-[13px] text-[#9EA9BA] italic">Sin datos GA4 aún</p>
                 )}
               </div>
             </div>
 
             {/* Follow-ups */}
             <div className="bg-[#FEFCF8] rounded-2xl border border-[#E5DDD2]/70 shadow-[0_1px_3px_rgba(30,37,51,0.04),0_4px_18px_rgba(30,37,51,0.04)] p-5 flex-1 anim-fade-up d-300">
-              <SectionTitle accent="bg-orange-400">PrÃ³ximos Follow-ups</SectionTitle>
+              <SectionTitle accent="bg-orange-400">Próximos Follow-ups</SectionTitle>
               {upcomingFollowUps.length === 0 ? (
                 <div className="flex flex-col items-center py-5 text-[#9EA9BA]">
                   <CheckCircle size={24} className="mb-1.5 opacity-30" />
@@ -494,7 +494,7 @@ export default function DashboardPage() {
             {recentContacts.length === 0 ? (
               <div className="flex flex-col items-center py-8 text-[#9EA9BA]">
                 <Users size={28} className="mb-2 opacity-30" />
-                <p className="text-sm">No hay contactos aÃºn</p>
+                <p className="text-sm">No hay contactos aún</p>
               </div>
             ) : (
               <div className="space-y-0.5">
@@ -519,16 +519,16 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* PrÃ³ximos viajes + Weekly KPIs */}
+          {/* Próximos viajes + Weekly KPIs */}
           <div className="flex flex-col gap-4">
 
             {/* Trips */}
             <div className="bg-[#FEFCF8] rounded-2xl border border-[#E5DDD2]/70 shadow-[0_1px_3px_rgba(30,37,51,0.04),0_4px_18px_rgba(30,37,51,0.04)] p-5 anim-fade-up d-300">
-              <SectionTitle accent="bg-[#1A6EC0]">PrÃ³ximos Viajes</SectionTitle>
+              <SectionTitle accent="bg-[#1A6EC0]">Próximos Viajes</SectionTitle>
               {upcomingTrips.length === 0 ? (
                 <div className="flex flex-col items-center py-5 text-[#9EA9BA]">
                   <CalendarCheck size={24} className="mb-1.5 opacity-30" />
-                  <p className="text-sm">No hay viajes prÃ³ximos</p>
+                  <p className="text-sm">No hay viajes próximos</p>
                 </div>
               ) : (
                 <div className="space-y-0.5">

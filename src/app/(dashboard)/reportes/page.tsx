@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useCallback } from "react";
 import {
@@ -91,7 +91,7 @@ function KpiCard({ label, value, sub, pct, accent, iconBg, icon }: KpiCardProps)
       <div className={`p-2.5 rounded-xl ${iconBg} flex-shrink-0`}>{icon}</div>
       <div className="min-w-0 flex-1">
         <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">{label}</p>
-        <p className="text-2xl font-bold text-gray-900 leading-none">{value}</p>
+        <p className="text-2xl font-bold text-gray-900 leading-none tabular-nums tracking-tight">{value}</p>
         <div className="flex items-center gap-2 mt-1.5">
           <DeltaBadge pct={pct} />
           {sub && <span className="text-xs text-gray-400">{sub}</span>}
@@ -231,7 +231,7 @@ export default function ReportesPage() {
             {/* Tendencia 6 meses */}
             <div className="xl:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
               <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
-                Tendencia — últimos 6 meses
+                Tendencia â€” Ãºltimos 6 meses
               </h2>
               <ResponsiveContainer width="100%" height={220}>
                 <ComposedChart data={data.trend} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
@@ -278,7 +278,7 @@ export default function ReportesPage() {
                             <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: color }} />
                             {name}
                           </span>
-                          <span className="text-sm font-bold text-gray-900">{fmtCLP(amount)}</span>
+                          <span className="text-sm font-bold text-gray-900 tabular-nums">{fmtCLP(amount)}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="flex-1 bg-gray-100 rounded-full h-1.5">
@@ -316,7 +316,7 @@ export default function ReportesPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1">
                             <span className="text-sm font-medium text-gray-700 truncate">{name}</span>
-                            <span className="text-sm font-bold text-gray-900 ml-2 flex-shrink-0">{fmtCLP(amount)}</span>
+                            <span className="text-sm font-bold text-gray-900 ml-2 flex-shrink-0 tabular-nums">{fmtCLP(amount)}</span>
                           </div>
                           <div className="bg-gray-100 rounded-full h-1.5">
                             <div
@@ -348,7 +348,7 @@ export default function ReportesPage() {
                         <th className="text-left text-xs text-gray-400 uppercase tracking-wider font-semibold pb-2 pr-3">Cliente</th>
                         <th className="text-left text-xs text-gray-400 uppercase tracking-wider font-semibold pb-2 pr-3">Producto</th>
                         <th className="text-right text-xs text-gray-400 uppercase tracking-wider font-semibold pb-2 pr-3">Monto</th>
-                        <th className="text-right text-xs text-gray-400 uppercase tracking-wider font-semibold pb-2">Comisión</th>
+                        <th className="text-right text-xs text-gray-400 uppercase tracking-wider font-semibold pb-2">ComisiÃ³n</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -357,20 +357,20 @@ export default function ReportesPage() {
                         const date = (s.saleDate || s.createdAt || "").slice(0, 10);
                         const fmtDate = date
                           ? new Date(date + "T00:00:00").toLocaleDateString("es-CL", { day: "2-digit", month: "short" })
-                          : "—";
+                          : "â€”";
                         return (
                           <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50/60">
                             <td className="py-2.5 pr-3 text-gray-400 text-xs">{fmtDate}</td>
                             <td className="py-2.5 pr-3 font-medium text-gray-800">{s.clientName}</td>
                             <td className="py-2.5 pr-3">
                               <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: `${color}18`, color }}>
-                                {s.product || "—"}
+                                {s.product || "â€”"}
                               </span>
                             </td>
-                            <td className="py-2.5 pr-3 text-right font-bold text-gray-900">{fmtCLP(s.amount)}</td>
+                            <td className="py-2.5 pr-3 text-right font-bold text-gray-900 tabular-nums">{fmtCLP(s.amount)}</td>
                             <td className="py-2.5 text-right">
                               {s.commission > 0 ? (
-                                <span className="text-emerald-600 font-semibold">{fmtCLP(s.commission)}</span>
+                                <span className="text-emerald-600 font-semibold tabular-nums">{fmtCLP(s.commission)}</span>
                               ) : (
                                 <Minus size={12} className="text-gray-300 ml-auto" />
                               )}
@@ -382,10 +382,10 @@ export default function ReportesPage() {
                     <tfoot>
                       <tr className="border-t-2 border-gray-200">
                         <td colSpan={3} className="pt-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                          Total — {data.sales.length} ventas
+                          Total â€” {data.sales.length} ventas
                         </td>
-                        <td className="pt-3 text-right font-bold text-gray-900">{fmtCLP(c!.gross)}</td>
-                        <td className="pt-3 text-right font-bold text-emerald-600">{fmtCLP(c!.commissions)}</td>
+                        <td className="pt-3 text-right font-bold text-gray-900 tabular-nums">{fmtCLP(c!.gross)}</td>
+                        <td className="pt-3 text-right font-bold text-emerald-600 tabular-nums">{fmtCLP(c!.commissions)}</td>
                       </tr>
                     </tfoot>
                   </table>
@@ -394,11 +394,11 @@ export default function ReportesPage() {
             </div>
           </div>
 
-          {/* Gastos por categoría */}
+          {/* Gastos por categorÃ­a */}
           {Object.keys(data.expenseByCat).length > 0 && (
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
               <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
-                Gastos por categoría
+                Gastos por categorÃ­a
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 {Object.entries(data.expenseByCat)
@@ -406,7 +406,7 @@ export default function ReportesPage() {
                   .map(([cat, amount]) => (
                     <div key={cat} className="bg-slate-50 rounded-xl p-3 border border-gray-100">
                       <p className="text-xs text-gray-400 font-medium mb-1 truncate">{cat}</p>
-                      <p className="text-base font-bold text-gray-900">{fmtCLP(amount)}</p>
+                      <p className="text-base font-bold text-gray-900 tabular-nums">{fmtCLP(amount)}</p>
                     </div>
                   ))}
               </div>
@@ -418,3 +418,4 @@ export default function ReportesPage() {
     </div>
   );
 }
+
