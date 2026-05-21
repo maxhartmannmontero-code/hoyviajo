@@ -1298,7 +1298,7 @@ export default function SalesPage() {
               <tr className="bg-gray-50 border-b border-gray-100">
                 <th className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Fecha venta</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Producto</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Check in → out</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">ID venta</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Estado</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Pago</th>
                 <th className="text-right px-4 py-3 font-medium text-gray-600">Monto</th>
@@ -1317,10 +1317,8 @@ export default function SalesPage() {
                       <p className="font-medium text-gray-900 truncate">{s.product || "—"}</p>
                       {s.detail && <p className="text-xs text-gray-400 truncate">{s.detail}</p>}
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
-                      {s.checkIn && s.checkOut
-                        ? `${s.checkIn} → ${s.checkOut}`
-                        : s.checkIn || s.checkOut || "—"}
+                    <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap font-mono">
+                      {s.id || "—"}
                     </td>
                     <td className="px-4 py-3">
                       {s.status ? (
