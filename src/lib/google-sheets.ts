@@ -425,7 +425,7 @@ export async function createSale(
 export async function updateSale(
   accessToken: string,
   id: string,
-  data: Partial<Omit<Sale, "id" | "createdAt">>
+  data: Partial<Omit<Sale, "createdAt">>
 ): Promise<void> {
   const rows = await readSheet(accessToken, "Sales!A2:R");
   const rowIndex = rows.findIndex((r) => r[0] === id);

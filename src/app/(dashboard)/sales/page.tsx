@@ -849,6 +849,7 @@ function NewSaleModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
 
 function EditSaleModal({ sale, onClose, onSaved }: { sale: Sale; onClose: () => void; onSaved: () => void }) {
   const [form, setForm] = useState({
+    id:            sale.id || "",
     saleDate:      sale.saleDate || "",
     travelDate:    sale.travelDate || "",
     product:       sale.product || "",
@@ -908,9 +909,11 @@ function EditSaleModal({ sale, onClose, onSaved }: { sale: Sale; onClose: () => 
           <button onClick={onClose}><X size={20} className="text-gray-400 hover:text-gray-600" /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          <div className="bg-gray-50 rounded-lg px-3 py-2 flex items-center justify-between">
-            <span className="text-xs font-medium text-gray-500">ID venta</span>
-            <span className="text-xs font-mono text-gray-600 select-all">{sale.id}</span>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">ID venta</label>
+            <input type="text" value={form.id} onChange={(e) => set("id", e.target.value)}
+              placeholder="Ej: HV-001"
+              className="w-full px-3 py-2 text-sm font-mono border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3c93d6]" />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Producto *</label>
