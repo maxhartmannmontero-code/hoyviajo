@@ -729,11 +729,6 @@ function NewSaleModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
             {field("Fecha de viaje", "travelDate", "date")}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            {field("Check in", "checkIn", "date")}
-            {field("Check out", "checkOut", "date")}
-          </div>
-
           {/* Estado y pago */}
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -913,6 +908,10 @@ function EditSaleModal({ sale, onClose, onSaved }: { sale: Sale; onClose: () => 
           <button onClick={onClose}><X size={20} className="text-gray-400 hover:text-gray-600" /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          <div className="bg-gray-50 rounded-lg px-3 py-2 flex items-center justify-between">
+            <span className="text-xs font-medium text-gray-500">ID venta</span>
+            <span className="text-xs font-mono text-gray-600 select-all">{sale.id}</span>
+          </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Producto *</label>
             <input type="text" value={form.product} onChange={(e) => set("product", e.target.value)}
@@ -922,10 +921,6 @@ function EditSaleModal({ sale, onClose, onSaved }: { sale: Sale; onClose: () => 
           <div className="grid grid-cols-2 gap-3">
             {field("Fecha de venta", "saleDate", "date")}
             {field("Fecha de viaje", "travelDate", "date")}
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {field("Check in", "checkIn", "date")}
-            {field("Check out", "checkOut", "date")}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
