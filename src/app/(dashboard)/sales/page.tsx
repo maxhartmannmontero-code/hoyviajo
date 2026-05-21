@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import {
   Upload, X, Search, TrendingUp, TrendingDown, DollarSign,
-  CheckCircle, FileSpreadsheet, Percent, UserPlus, RefreshCw, Target, ChevronDown, ChevronUp, Eye, EyeOff, Plus,
+  CheckCircle, FileSpreadsheet, Percent, UserPlus, RefreshCw, Target, ChevronDown, ChevronUp, Eye, EyeOff, Plus, Pencil,
 } from "lucide-react";
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
@@ -850,6 +850,146 @@ function NewSaleModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
   );
 }
 
+// ─── Edit Sale Modal ─────────────────────────────────────────────────────────
+
+function EditSaleModal({ sale, onClose, onSaved }: { sale: Sale; onClose: () => void; onSaved: () => void }) {
+  const [form, setForm] = useState({
+    saleDate:      sale.saleDate || "",
+    travelDate:    sale.travelDate || "",
+    product:       sale.product || "",
+    detail:        sale.detail || "",
+    checkIn:       sale.checkIn || "",
+    checkOut:      sale.checkOut || "",
+    status:        sale.status || "Emitida",
+    paymentStatus: sale.paymentStatus || "",
+    amount:        String(sale.amount || ""),
+    currency:      sale.currency || "CLP",
+    commission:    String(sale.commission || ""),
+    clientName:    sale.clientName || "",
+    clientEmail:   sale.clientEmail || "",
+    clientPhone:   sale.clientPhone || "",
+    partner:       sale.partner || "",
+    notes:         sale.notes || "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const set = (key: string, val: string) => setForm((f) => ({ ...f, [key]: val }));
+
+  async function handleSubmit() {
+    if (!form.product.trim()) { setError("El producto es obligatorio."); return; }
+    setSaving(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/sales/${sale.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          amount:     parseFloat(String(form.amount).replace(/[^0-9.,]/g, "").replace(",", ".")) || 0,
+          commission: parseFloat(String(form.commission).replace(/[^0-9.,]/g, "").replace(",", ".")) || 0,
+        }),
+      });
+      if (res.ok) { onSaved(); onClose(); }
+      else setError("Error al guardar. Intenta de nuevo.");
+    } catch { setError("Error de conexión."); }
+    finally { setSaving(false); }
+  }
+
+  const field = (label: string, key: string, type = "text", placeholder = "") => (
+    <div>
+      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      <input type={type} value={(form as Record<string, string>)[key]}
+        onChange={(e) => set(key, e.target.value)} placeholder={placeholder}
+        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3c93d6]" />
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-5 border-b">
+          <h2 className="font-semibold text-gray-900">Editar venta</h2>
+          <button onClick={onClose}><X size={20} className="text-gray-400 hover:text-gray-600" /></button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Producto *</label>
+            <input type="text" value={form.product} onChange={(e) => set("product", e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3c93d6]" required />
+          </div>
+          <div>{field("Detalle", "detail", "text", "Descripción adicional")}</div>
+          <div className="grid grid-cols-2 gap-3">
+            {field("Fecha de venta", "saleDate", "date")}
+            {field("Fecha de viaje", "travelDate", "date")}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {field("Check in", "checkIn", "date")}
+            {field("Check out", "checkOut", "date")}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Estado</label>
+              <select value={form.status} onChange={(e) => set("status", e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3c93d6]">
+                <option>Emitida</option><option>En proceso</option><option>Concluida</option><option>Cancelada</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Medio de pago</label>
+              <select value={form.paymentStatus} onChange={(e) => set("paymentStatus", e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3c93d6]">
+                <option value="">— Seleccionar —</option>
+                <option>GP</option><option>TC</option><option>TD</option><option>PR</option><option>PR+TC</option><option>Pendiente</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Monto</label>
+              <input type="number" min="0" value={form.amount} onChange={(e) => set("amount", e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3c93d6]" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Comisión</label>
+              <input type="number" min="0" value={form.commission} onChange={(e) => set("commission", e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3c93d6]" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Moneda</label>
+              <select value={form.currency} onChange={(e) => set("currency", e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3c93d6]">
+                <option>CLP</option><option>USD</option><option>EUR</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {field("Cliente", "clientName")}
+            {field("Teléfono", "clientPhone", "tel")}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {field("Email", "clientEmail", "email")}
+            {field("Partner / Proveedor", "partner")}
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Notas</label>
+            <textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={2}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3c93d6] resize-none" />
+          </div>
+          {error && <p className="text-sm text-red-500">{error}</p>}
+        </div>
+        <div className="flex justify-end gap-3 p-5 border-t">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancelar</button>
+          <button onClick={handleSubmit} disabled={saving}
+            className="px-5 py-2 bg-[#3c93d6] text-white text-sm font-medium rounded-lg hover:bg-[#2d7dbf] disabled:opacity-50">
+            {saving ? "Guardando..." : "Guardar cambios"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Import Modal ────────────────────────────────────────────────────────────
 
 function ImportModal({
@@ -1065,6 +1205,7 @@ export default function SalesPage() {
   const [hideCancelled, setHideCancelled] = useState(true);
   const [showImport, setShowImport] = useState(false);
   const [showNewSale, setShowNewSale] = useState(false);
+  const [editSale, setEditSale] = useState<Sale | null>(null);
   const [seeding, setSeeding] = useState(false);
   const [showSalesTable, setShowSalesTable] = useState(true);
   const [masked, setMasked] = useState(false);
@@ -1308,10 +1449,10 @@ export default function SalesPage() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {filtered.length === 0 ? (
-                <tr><td colSpan={8} className="text-center py-10 text-gray-400">No se encontraron resultados</td></tr>
+                <tr><td colSpan={9} className="text-center py-10 text-gray-400">No se encontraron resultados</td></tr>
               ) : (
                 filtered.map((s) => (
-                  <tr key={s.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={s.id} className="hover:bg-gray-50 transition-colors group">
                     <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{s.saleDate || s.travelDate || "—"}</td>
                     <td className="px-4 py-3 max-w-[200px]">
                       <p className="font-medium text-gray-900 truncate">{s.product || "—"}</p>
@@ -1340,6 +1481,15 @@ export default function SalesPage() {
                       <p className="text-gray-900 truncate">{s.clientName || "—"}</p>
                       {s.clientEmail && <p className="text-xs text-gray-400 truncate">{s.clientEmail}</p>}
                     </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => setEditSale(s)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 text-gray-400 hover:text-[#3c93d6] rounded-lg hover:bg-blue-50"
+                        title="Editar venta"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -1350,6 +1500,9 @@ export default function SalesPage() {
 
       </>}
 
+      {editSale && (
+        <EditSaleModal sale={editSale} onClose={() => setEditSale(null)} onSaved={fetchSales} />
+      )}
       {showNewSale && (
         <NewSaleModal onClose={() => setShowNewSale(false)} onSaved={fetchSales} />
       )}

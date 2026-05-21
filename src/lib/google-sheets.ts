@@ -422,6 +422,24 @@ export async function createSale(
   return { ...data, id, createdAt: now };
 }
 
+export async function updateSale(
+  accessToken: string,
+  id: string,
+  data: Partial<Omit<Sale, "id" | "createdAt">>
+): Promise<void> {
+  const rows = await readSheet(accessToken, "Sales!A2:R");
+  const rowIndex = rows.findIndex((r) => r[0] === id);
+  if (rowIndex === -1) throw new Error("Sale not found");
+  const existing = rowToSale(rows[rowIndex]);
+  const u = { ...existing, ...data };
+  await updateRow(accessToken, "Sales", rowIndex + 2, [
+    u.id, u.travelDate, u.product, u.detail, u.checkIn, u.checkOut,
+    u.status, u.paymentStatus, String(u.amount), u.currency,
+    u.clientName, u.clientEmail, u.clientPhone, u.partner,
+    String(u.commission), u.notes, u.createdAt, u.saleDate || "",
+  ]);
+}
+
 export async function clearSales(accessToken: string): Promise<void> {
   const sheets = getSheets(accessToken);
   await sheets.spreadsheets.values.clear({
