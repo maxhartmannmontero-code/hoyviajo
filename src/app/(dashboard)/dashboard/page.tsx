@@ -73,7 +73,7 @@ export default function DashboardPage() {
   const [gaData, setGaData]       = useState<{ sessions: number; users: number } | null>(null);
   const [masked, setMasked]       = useState(false);
 
-  const hide = (v: string) => (masked ? "â€¢â€¢â€¢â€¢â€¢" : v);
+  const hide = (v: string) => (masked ? "•••••" : v);
 
   useEffect(() => {
     Promise.all([
@@ -183,7 +183,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-center h-full bg-[#F2EDE5]">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 rounded-full border-[3px] border-[#C89035]/30 border-t-[#C89035] animate-spin" />
-          <p className="font-sans text-lg text-[#1E2533]/50 italic">Cargando datosâ€¦</p>
+          <p className="font-sans text-lg text-[#1E2533]/50 italic">Cargando datos…</p>
         </div>
       </div>
     );
@@ -237,7 +237,7 @@ export default function DashboardPage() {
               className="font-sans font-bold text-white/[0.04] leading-none"
               style={{ fontSize: "clamp(80px, 12vw, 140px)" }}
             >
-              {masked ? "â€”" : `${metaPct.toFixed(0)}%`}
+              {masked ? "—" : `${metaPct.toFixed(0)}%`}
             </span>
           </div>
           {/* Subtle top line */}
@@ -300,12 +300,12 @@ export default function DashboardPage() {
             {/* Stats grid */}
             <div className="grid grid-cols-4 gap-4 pt-1">
               {[
-                { label: "Avance",       value: masked ? "â€”" : `${metaPct.toFixed(0)}%` },
+                { label: "Avance",       value: masked ? "—" : `${metaPct.toFixed(0)}%` },
                 { label: "Operaciones",  value: `${monthSalesCount} ventas` },
-                { label: "Ticket prom.", value: avgTicket > 0 ? hide(fmtCLP(avgTicket)) : "â€”" },
+                { label: "Ticket prom.", value: avgTicket > 0 ? hide(fmtCLP(avgTicket)) : "—" },
                 {
                   label: "Proyección",
-                  value: projected > 0 ? hide(fmtCLP(projected)) : "â€”",
+                  value: projected > 0 ? hide(fmtCLP(projected)) : "—",
                   highlight: projected >= META ? "text-[#ACFD46]" : "text-orange-300",
                 },
               ].map(({ label, value, highlight }) => (
@@ -333,7 +333,7 @@ export default function DashboardPage() {
           <StatCard
             icon={<Hash size={17} className="text-indigo-600" />}
             label="Ticket promedio"
-            value={avgTicket > 0 ? hide(fmtCLP(avgTicket)) : "â€”"}
+            value={avgTicket > 0 ? hide(fmtCLP(avgTicket)) : "—"}
             sub={monthSalesCount > 0 ? `sobre ${monthSalesCount} ventas` : "sin ventas este mes"}
             iconBg="bg-indigo-50"
             delay="d-200"
@@ -341,7 +341,7 @@ export default function DashboardPage() {
           <StatCard
             icon={<AlertCircle size={17} className={daysSinceSale !== null && daysSinceSale > 3 ? "text-red-500" : "text-[#0B7A6C]"} />}
             label="Días sin venta"
-            value={daysSinceSale !== null ? `${daysSinceSale}d` : "â€”"}
+            value={daysSinceSale !== null ? `${daysSinceSale}d` : "—"}
             sub={lastSaleDate
               ? `Última: ${new Date(lastSaleDate + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "short" })}`
               : "sin ventas registradas"}
@@ -397,8 +397,8 @@ export default function DashboardPage() {
                       <TrendingUp size={15} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13.5px] font-semibold text-[#1E2533] truncate">{s.product || "â€”"}</p>
-                      <p className="text-[11.5px] text-[#9EA9BA] truncate">{s.clientName || s.saleDate || "â€”"}</p>
+                      <p className="text-[13.5px] font-semibold text-[#1E2533] truncate">{s.product || "—"}</p>
+                      <p className="text-[11.5px] text-[#9EA9BA] truncate">{s.clientName || s.saleDate || "—"}</p>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <p className="font-mono text-[13.5px] font-semibold text-[#1A6EC0] tabular-nums">
@@ -479,7 +479,7 @@ export default function DashboardPage() {
                       <p className="text-[11.5px] font-semibold text-orange-500 whitespace-nowrap flex-shrink-0">
                         {a.nextFollowUp
                           ? new Date(a.nextFollowUp + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "short" })
-                          : "â€”"}
+                          : "—"}
                       </p>
                     </div>
                   ))}
@@ -567,7 +567,7 @@ export default function DashboardPage() {
               {!weekKPI ? (
                 <div className="flex flex-col items-center py-5 text-[#9EA9BA]">
                   <Target size={24} className="mb-1.5 opacity-30" />
-                  <p className="text-sm text-center">Sin registrar â€” ve a Marketing â†’ KPIs</p>
+                  <p className="text-sm text-center">Sin registrar — ve a Marketing â†’ KPIs</p>
                 </div>
               ) : (
                 <div className="space-y-4">

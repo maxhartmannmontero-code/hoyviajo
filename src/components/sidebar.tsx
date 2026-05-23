@@ -123,11 +123,9 @@ export function Sidebar() {
 
         {/* Logo */}
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-white/[0.06]">
-          <img
-            src="/400x200.png"
-            alt="Hoy Viajo"
-            className="h-7 w-auto object-contain brightness-0 invert"
-          />
+          <span className="text-[15px] font-bold text-white tracking-tight leading-none">
+            Hoy Viajo
+          </span>
           <span className="text-[9px] font-semibold text-[#ACFD46] tracking-[0.22em] uppercase border border-[#ACFD46]/25 px-1.5 py-[3px] rounded-[4px] bg-[#ACFD46]/[0.07]">
             CRM
           </span>
