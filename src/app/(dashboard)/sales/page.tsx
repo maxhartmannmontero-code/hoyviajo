@@ -627,6 +627,7 @@ function ProjectionsPanel({ sales, currency }: { sales: Sale[]; currency: string
 const TODAY = new Date().toISOString().slice(0, 10);
 
 const EMPTY_SALE = {
+  id: "",
   saleDate: TODAY,
   travelDate: "",
   product: "",
@@ -699,6 +700,17 @@ function NewSaleModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
         </div>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-4">
+          {/* ID venta */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">ID venta <span className="text-gray-400 font-normal">(opcional — se genera automáticamente si se deja vacío)</span></label>
+            <input
+              type="text"
+              value={form.id}
+              onChange={(e) => set("id", e.target.value)}
+              placeholder="Ej: HV-001"
+              className="w-full px-3 py-2 text-sm font-mono border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3c93d6]"
+            />
+          </div>
           {/* Producto */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Producto *</label>

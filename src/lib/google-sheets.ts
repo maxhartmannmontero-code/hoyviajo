@@ -408,10 +408,10 @@ export async function getSales(accessToken: string): Promise<Sale[]> {
 
 export async function createSale(
   accessToken: string,
-  data: Omit<Sale, "id" | "createdAt">
+  data: Omit<Sale, "id" | "createdAt"> & { id?: string }
 ): Promise<Sale> {
   const now = new Date().toISOString();
-  const id = generateId();
+  const id = data.id?.trim() || generateId();
   const row = [
     id, data.travelDate, data.product, data.detail, data.checkIn, data.checkOut,
     data.status, data.paymentStatus, String(data.amount), data.currency,
