@@ -3,8 +3,6 @@ import { Resend } from "resend";
 import { getContacts } from "@/lib/google-sheets";
 import { getAccessToken } from "@/lib/get-access-token";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 function injectUtm(html: string, campaign: string): string {
   return html.replace(/href="(https?:\/\/[^"]+)"/g, (_, url) => {
     const sep = url.includes("?") ? "&" : "?";
@@ -13,6 +11,7 @@ function injectUtm(html: string, campaign: string): string {
 }
 
 export async function POST(req: NextRequest) {
+  const resend = new Resend(process.env.RESEND_API_KEY);
   const { contactIds, subject, body, utmCampaign } = await req.json();
 
   if (!contactIds?.length || !subject || !body) {
