@@ -166,9 +166,10 @@ export default function DashboardPage() {
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const daysPassed  = now.getDate();
   const daysLeft    = daysInMonth - daysPassed;
-  const metaPct     = Math.min((monthSalesAmount / META) * 100, 100);
+  const metaPctReal = monthSalesAmount > 0 ? (monthSalesAmount / META) * 100 : 0;
+  const metaPct     = Math.min(metaPctReal, 100); // solo para la barra visual
   const expectedPct = (daysPassed / daysInMonth) * 100;
-  const onTrack     = metaPct >= expectedPct;
+  const onTrack     = metaPctReal >= expectedPct;
   const remaining   = Math.max(META - monthSalesAmount, 0);
   const dailyNeeded = daysLeft > 0 ? remaining / daysLeft : 0;
   const projected   = daysPassed > 0 ? (monthSalesAmount / daysPassed) * daysInMonth : 0;
@@ -317,7 +318,7 @@ export default function DashboardPage() {
               className="font-sans font-bold text-white/[0.04] leading-none"
               style={{ fontSize: "clamp(80px, 12vw, 140px)" }}
             >
-              {masked ? "—" : `${metaPct.toFixed(0)}%`}
+              {masked ? "—" : `${metaPctReal.toFixed(0)}%`}
             </span>
           </div>
           {/* Subtle top line */}
@@ -380,7 +381,7 @@ export default function DashboardPage() {
             {/* Stats grid */}
             <div className="grid grid-cols-4 gap-4 pt-1">
               {[
-                { label: "Avance",       value: masked ? "—" : `${metaPct.toFixed(0)}%` },
+                { label: "Avance",       value: masked ? "—" : `${metaPctReal.toFixed(0)}%` },
                 { label: "Operaciones",  value: `${monthSalesCount} ventas` },
                 { label: "Ticket prom.", value: avgTicket > 0 ? hide(fmtCLP(avgTicket)) : "—" },
                 {
