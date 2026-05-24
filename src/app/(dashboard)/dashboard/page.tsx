@@ -67,21 +67,23 @@ function SectionTitle({ children, accent }: { children: React.ReactNode; accent:
 
 function groupSalesByMonth(salesData: Sale[]) {
   const isEmit = (s: Sale) => s.status.toLowerCase().includes("emitid");
-  const map = new Map<string, number>();
+  const map = new Map<string, { amount: number; commission: number }>();
   for (const s of salesData) {
     if (!isEmit(s)) continue;
     const d = s.saleDate || s.createdAt || "";
     const ym = d.slice(0, 7);
     if (!/^\d{4}-\d{2}$/.test(ym)) continue;
-    map.set(ym, (map.get(ym) || 0) + s.amount);
+    const prev = map.get(ym) || { amount: 0, commission: 0 };
+    map.set(ym, { amount: prev.amount + s.amount, commission: prev.commission + s.commission });
   }
   return Array.from(map.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .slice(-14)
-    .map(([key, amount]) => ({
+    .map(([key, { amount, commission }]) => ({
       key,
       label: new Date(key + "-15").toLocaleDateString("es-CL", { month: "short", year: "2-digit" }),
       amount,
+      commission,
     }));
 }
 
@@ -166,13 +168,14 @@ export default function DashboardPage() {
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const daysPassed  = now.getDate();
   const daysLeft    = daysInMonth - daysPassed;
-  const metaPctReal = monthSalesAmount > 0 ? (monthSalesAmount / META) * 100 : 0;
+  // META = objetivo de comisiones/margen mensual, no de ventas brutas
+  const metaPctReal = monthCommissions > 0 ? (monthCommissions / META) * 100 : 0;
   const metaPct     = Math.min(metaPctReal, 100); // solo para la barra visual
   const expectedPct = (daysPassed / daysInMonth) * 100;
   const onTrack     = metaPctReal >= expectedPct;
-  const remaining   = Math.max(META - monthSalesAmount, 0);
+  const remaining   = Math.max(META - monthCommissions, 0);
   const dailyNeeded = daysLeft > 0 ? remaining / daysLeft : 0;
-  const projected   = daysPassed > 0 ? (monthSalesAmount / daysPassed) * daysInMonth : 0;
+  const projected   = daysPassed > 0 ? (monthCommissions / daysPassed) * daysInMonth : 0;
 
   const netProfit   = monthCommissions - monthExpTotal;
   const marginPct   = monthSalesAmount > 0 ? (netProfit / monthSalesAmount) * 100 : 0;
@@ -332,13 +335,15 @@ export default function DashboardPage() {
                 </p>
                 <div className="flex items-end gap-3">
                   <span className="font-sans text-[2.6rem] font-bold text-white leading-none tabular-nums">
-                    {hide(fmtCLP(monthSalesAmount))}
+                    {hide(fmtCLP(monthCommissions))}
                   </span>
                   <span className="text-white/35 text-base mb-1.5 font-light">
                     / {hide(fmtCLP(META))}
                   </span>
                 </div>
-                <p className="text-white/35 text-[11px] mt-1.5 tracking-wide">ventas emitidas del mes</p>
+                <p className="text-white/35 text-[11px] mt-1.5 tracking-wide">
+                  comisiones del mes · ventas: {hide(fmtCLP(monthSalesAmount))}
+                </p>
               </div>
 
               <div className="text-right mt-1 flex-shrink-0">
@@ -381,9 +386,9 @@ export default function DashboardPage() {
             {/* Stats grid */}
             <div className="grid grid-cols-4 gap-4 pt-1">
               {[
-                { label: "Avance",       value: masked ? "—" : `${metaPctReal.toFixed(0)}%` },
-                { label: "Operaciones",  value: `${monthSalesCount} ventas` },
-                { label: "Ticket prom.", value: avgTicket > 0 ? hide(fmtCLP(avgTicket)) : "—" },
+                { label: "Avance meta",   value: masked ? "—" : `${metaPctReal.toFixed(0)}%` },
+                { label: "Operaciones",   value: `${monthSalesCount} ventas` },
+                { label: "Com. promedio", value: monthSalesCount > 0 ? hide(fmtCLP(monthCommissions / monthSalesCount)) : "—" },
                 {
                   label: "Proyección",
                   value: projected > 0 ? hide(fmtCLP(projected)) : "—",
@@ -407,7 +412,7 @@ export default function DashboardPage() {
             <div className=”flex items-center justify-between mb-1”>
               <h2 className=”font-sans text-[1.05rem] font-semibold text-[#1E2533] flex items-center gap-2.5 leading-none”>
                 <span className=”w-[3px] h-5 rounded-full bg-[#C89035]” />
-                Ventas mensuales vs objetivo $4M
+                Comisiones mensuales vs objetivo $4M
               </h2>
               <span className=”text-[11px] text-[#9EA9BA]”>Línea dorada = meta mensual</span>
             </div>
@@ -425,7 +430,7 @@ export default function DashboardPage() {
                 <Tooltip
                   content={({ active, payload, label }) => {
                     if (!active || !payload?.length) return null;
-                    const val = payload[0]?.value as number;
+                    const val = (payload[0]?.value ?? 0) as number;
                     const diff = val - META;
                     const pct = Math.abs((diff / META) * 100).toFixed(0);
                     return (
@@ -445,12 +450,12 @@ export default function DashboardPage() {
                   strokeDasharray=”6 3”
                   strokeWidth={1.5}
                 />
-                <Bar dataKey=”amount” radius={[5, 5, 0, 0]} maxBarSize={44}>
+                <Bar dataKey=”commission” radius={[5, 5, 0, 0]} maxBarSize={44}>
                   {salesChartData.map((entry) => (
                     <Cell
                       key={entry.key}
                       fill={
-                        entry.amount >= META ? “#0B7A6C”
+                        entry.commission >= META ? “#0B7A6C”
                         : entry.key === thisMonth ? “#1A6EC0”
                         : “#BDD8F3”
                       }
