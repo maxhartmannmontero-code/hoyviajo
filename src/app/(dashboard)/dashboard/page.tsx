@@ -18,7 +18,7 @@ const META = 4_000_000;
 const fmtCLP = (n: number) =>
   new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(n);
 
-/* â”€â”€ StatCard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€ StatCard â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 interface StatCardProps {
   icon: React.ReactNode;
   label: string;
@@ -55,7 +55,7 @@ function StatCard({ icon, label, value, sub, iconBg, alert, delay }: StatCardPro
   );
 }
 
-/* â”€â”€ SectionTitle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€ SectionTitle â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 function SectionTitle({ children, accent }: { children: React.ReactNode; accent: string }) {
   return (
     <h2 className="font-sans text-[1.15rem] font-semibold text-[#1E2533] mb-4 flex items-center gap-2.5 leading-none">
@@ -87,7 +87,7 @@ function groupSalesByMonth(salesData: Sale[]) {
     }));
 }
 
-/* â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€ Page â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 export default function DashboardPage() {
   const [contacts, setContacts]   = useState<Contact[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -143,7 +143,7 @@ export default function DashboardPage() {
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const monthLabel = now.toLocaleDateString("es-CL", { month: "long", year: "numeric" });
 
-  /* â”€â”€ Metrics â”€â”€ */
+  /* â"€â"€ Metrics â"€â"€ */
   const emitidas = (s: Sale) => s.status.toLowerCase().includes("emitid");
 
   const monthSales = sales.filter(s => {
@@ -226,7 +226,7 @@ export default function DashboardPage() {
     <div className="min-h-full bg-[#F2EDE5]">
       <div className="max-w-7xl mx-auto p-6 lg:p-8 space-y-6">
 
-        {/* â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* â"€â"€ Header â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
         <div className="flex items-start justify-between anim-fade-up d-0">
           <div>
             <p className="text-[10.5px] font-semibold text-[#C89035] uppercase tracking-[0.2em] mb-2">
@@ -254,57 +254,57 @@ export default function DashboardPage() {
         </div>
 
         {/* ── Margen de utilidad ────────────────────────────────── */}
-        <div className=”grid grid-cols-3 gap-3 anim-fade-up d-50”>
+        <div className="grid grid-cols-3 gap-3 anim-fade-up d-50">
           {/* Margen neto */}
-          <div className=”bg-[#FEFCF8] rounded-2xl border border-[#E5DDD2]/70 shadow-[0_1px_3px_rgba(30,37,51,0.04)] p-5”>
-            <div className=”flex items-center gap-2 mb-3”>
+          <div className="bg-[#FEFCF8] rounded-2xl border border-[#E5DDD2]/70 shadow-[0_1px_3px_rgba(30,37,51,0.04)] p-5">
+            <div className="flex items-center gap-2 mb-3">
               {netProfit >= 0
-                ? <TrendingUp size={15} className=”text-[#0B7A6C]” />
-                : <TrendingDown size={15} className=”text-red-500” />}
-              <p className=”text-[10px] font-semibold text-[#9EA9BA] uppercase tracking-[0.14em]”>Margen neto del mes</p>
+                ? <TrendingUp size={15} className="text-[#0B7A6C]" />
+                : <TrendingDown size={15} className="text-red-500" />}
+              <p className="text-[10px] font-semibold text-[#9EA9BA] uppercase tracking-[0.14em]">Margen neto del mes</p>
             </div>
-            <p className={`font-mono text-[1.65rem] font-bold tabular-nums leading-none ${netProfit >= 0 ? “text-[#0B7A6C]” : “text-red-500”}`}>
+            <p className={`font-mono text-[1.65rem] font-bold tabular-nums leading-none ${netProfit >= 0 ? "text-[#0B7A6C]" : "text-red-500"}`}>
               {hide(fmtCLP(netProfit))}
             </p>
-            <p className=”text-[11px] text-[#9EA9BA] mt-2”>comisiones − gastos operativos</p>
+            <p className="text-[11px] text-[#9EA9BA] mt-2">comisiones − gastos operativos</p>
           </div>
 
           {/* Margen % */}
-          <div className=”bg-[#FEFCF8] rounded-2xl border border-[#E5DDD2]/70 shadow-[0_1px_3px_rgba(30,37,51,0.04)] p-5”>
-            <div className=”flex items-center gap-2 mb-3”>
+          <div className="bg-[#FEFCF8] rounded-2xl border border-[#E5DDD2]/70 shadow-[0_1px_3px_rgba(30,37,51,0.04)] p-5">
+            <div className="flex items-center gap-2 mb-3">
               {marginPct >= 0
-                ? <ArrowUp size={15} className=”text-[#0B7A6C]” />
-                : <ArrowDown size={15} className=”text-red-500” />}
-              <p className=”text-[10px] font-semibold text-[#9EA9BA] uppercase tracking-[0.14em]”>Margen sobre ventas</p>
+                ? <ArrowUp size={15} className="text-[#0B7A6C]" />
+                : <ArrowDown size={15} className="text-red-500" />}
+              <p className="text-[10px] font-semibold text-[#9EA9BA] uppercase tracking-[0.14em]">Margen sobre ventas</p>
             </div>
             <p className={`font-mono text-[1.65rem] font-bold tabular-nums leading-none ${
-              marginPct >= 15 ? “text-[#0B7A6C]” : marginPct >= 5 ? “text-[#C89035]” : “text-red-500”
+              marginPct >= 15 ? "text-[#0B7A6C]" : marginPct >= 5 ? "text-[#C89035]" : "text-red-500"
             }`}>
-              {masked ? “••%” : `${marginPct.toFixed(1)}%`}
+              {masked ? "••%" : `${marginPct.toFixed(1)}%`}
             </p>
-            <p className=”text-[11px] text-[#9EA9BA] mt-2”>
-              {masked ? “••••” : monthSalesAmount > 0 ? `sobre ${fmtCLP(monthSalesAmount)} en ventas` : “sin ventas este mes”}
+            <p className="text-[11px] text-[#9EA9BA] mt-2">
+              {masked ? "••••" : monthSalesAmount > 0 ? `sobre ${fmtCLP(monthSalesAmount)} en ventas` : "sin ventas este mes"}
             </p>
           </div>
 
           {/* Comisiones vs gastos */}
-          <div className=”bg-[#FEFCF8] rounded-2xl border border-[#E5DDD2]/70 shadow-[0_1px_3px_rgba(30,37,51,0.04)] p-5”>
-            <div className=”flex items-center gap-2 mb-3”>
-              <DollarSign size={15} className=”text-[#C89035]” />
-              <p className=”text-[10px] font-semibold text-[#9EA9BA] uppercase tracking-[0.14em]”>Comisiones del mes</p>
+          <div className="bg-[#FEFCF8] rounded-2xl border border-[#E5DDD2]/70 shadow-[0_1px_3px_rgba(30,37,51,0.04)] p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <DollarSign size={15} className="text-[#C89035]" />
+              <p className="text-[10px] font-semibold text-[#9EA9BA] uppercase tracking-[0.14em]">Comisiones del mes</p>
             </div>
-            <p className=”font-mono text-[1.65rem] font-bold text-[#C89035] tabular-nums leading-none”>
+            <p className="font-mono text-[1.65rem] font-bold text-[#C89035] tabular-nums leading-none">
               {hide(fmtCLP(monthCommissions))}
             </p>
-            <p className=”text-[11px] text-[#9EA9BA] mt-2”>
+            <p className="text-[11px] text-[#9EA9BA] mt-2">
               {monthExpTotal > 0
-                ? <span>Gastos: <span className=”text-red-400 font-medium”>{masked ? “••••” : fmtCLP(monthExpTotal)}</span></span>
-                : “sin gastos registrados”}
+                ? <span>Gastos: <span className="text-red-400 font-medium">{masked ? "••••" : fmtCLP(monthExpTotal)}</span></span>
+                : "sin gastos registrados"}
             </p>
           </div>
         </div>
 
-        {/* â”€â”€ META HERO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* â"€â"€ META HERO â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
         <div
           className="relative rounded-2xl overflow-hidden anim-fade-up d-100"
           style={{ background: "linear-gradient(135deg, #091525 0%, #0F2240 55%, #122C50 100%)" }}
@@ -408,20 +408,20 @@ export default function DashboardPage() {
 
         {/* ── Ventas vs Objetivo ────────────────────────────────── */}
         {salesChartData.length > 1 && (
-          <div className=”bg-[#FEFCF8] rounded-2xl border border-[#E5DDD2]/70 shadow-[0_1px_3px_rgba(30,37,51,0.04),0_4px_18px_rgba(30,37,51,0.04)] p-5 anim-fade-up d-125”>
-            <div className=”flex items-center justify-between mb-1”>
-              <h2 className=”font-sans text-[1.05rem] font-semibold text-[#1E2533] flex items-center gap-2.5 leading-none”>
-                <span className=”w-[3px] h-5 rounded-full bg-[#C89035]” />
+          <div className="bg-[#FEFCF8] rounded-2xl border border-[#E5DDD2]/70 shadow-[0_1px_3px_rgba(30,37,51,0.04),0_4px_18px_rgba(30,37,51,0.04)] p-5 anim-fade-up d-125">
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="font-sans text-[1.05rem] font-semibold text-[#1E2533] flex items-center gap-2.5 leading-none">
+                <span className="w-[3px] h-5 rounded-full bg-[#C89035]" />
                 Comisiones mensuales vs objetivo $4M
               </h2>
-              <span className=”text-[11px] text-[#9EA9BA]”>Línea dorada = meta mensual</span>
+              <span className="text-[11px] text-[#9EA9BA]">Línea dorada = meta mensual</span>
             </div>
-            <ResponsiveContainer width=”100%” height={210}>
+            <ResponsiveContainer width="100%" height={210}>
               <ComposedChart data={salesChartData} margin={{ top: 16, right: 12, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray=”3 3” stroke=”#F0EAE2” vertical={false} />
-                <XAxis dataKey=”label” tick={{ fontSize: 10, fill: “#9EA9BA” }} tickLine={false} axisLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#F0EAE2" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9EA9BA" }} tickLine={false} axisLine={false} />
                 <YAxis
-                  tick={{ fontSize: 9, fill: “#9EA9BA” }}
+                  tick={{ fontSize: 9, fill: "#9EA9BA" }}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={v => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(0)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)}
@@ -434,10 +434,10 @@ export default function DashboardPage() {
                     const diff = val - META;
                     const pct = Math.abs((diff / META) * 100).toFixed(0);
                     return (
-                      <div className=”bg-white border border-[#E5DDD2] shadow-lg rounded-xl px-4 py-3 text-xs”>
-                        <p className=”font-semibold text-[#1E2533] mb-1.5”>{label}</p>
-                        <p className=”font-mono font-semibold text-[#1E2533]”>{masked ? “•••••” : fmtCLP(val)}</p>
-                        {!masked && <p className={`mt-1 font-medium ${diff >= 0 ? “text-[#0B7A6C]” : “text-[#C89035]”}`}>
+                      <div className="bg-white border border-[#E5DDD2] shadow-lg rounded-xl px-4 py-3 text-xs">
+                        <p className="font-semibold text-[#1E2533] mb-1.5">{label}</p>
+                        <p className="font-mono font-semibold text-[#1E2533]">{masked ? "•••••" : fmtCLP(val)}</p>
+                        {!masked && <p className={`mt-1 font-medium ${diff >= 0 ? "text-[#0B7A6C]" : "text-[#C89035]"}`}>
                           {diff >= 0 ? `▲ +${pct}% sobre meta` : `▼ −${pct}% bajo meta`}
                         </p>}
                       </div>
@@ -446,43 +446,43 @@ export default function DashboardPage() {
                 />
                 <ReferenceLine
                   y={META}
-                  stroke=”#C89035”
-                  strokeDasharray=”6 3”
+                  stroke="#C89035"
+                  strokeDasharray="6 3"
                   strokeWidth={1.5}
                 />
-                <Bar dataKey=”commission” radius={[5, 5, 0, 0]} maxBarSize={44}>
+                <Bar dataKey="commission" radius={[5, 5, 0, 0]} maxBarSize={44}>
                   {salesChartData.map((entry) => (
                     <Cell
                       key={entry.key}
                       fill={
-                        entry.commission >= META ? “#0B7A6C”
-                        : entry.key === thisMonth ? “#1A6EC0”
-                        : “#BDD8F3”
+                        entry.commission >= META ? "#0B7A6C"
+                        : entry.key === thisMonth ? "#1A6EC0"
+                        : "#BDD8F3"
                       }
                     />
                   ))}
                 </Bar>
               </ComposedChart>
             </ResponsiveContainer>
-            <div className=”flex items-center gap-5 px-1 -mt-1”>
-              <span className=”flex items-center gap-1.5 text-[11px] text-[#9EA9BA]”>
-                <span className=”w-3 h-3 rounded-sm bg-[#0B7A6C] inline-block” /> Sobre $4M
+            <div className="flex items-center gap-5 px-1 -mt-1">
+              <span className="flex items-center gap-1.5 text-[11px] text-[#9EA9BA]">
+                <span className="w-3 h-3 rounded-sm bg-[#0B7A6C] inline-block" /> Sobre $4M
               </span>
-              <span className=”flex items-center gap-1.5 text-[11px] text-[#9EA9BA]”>
-                <span className=”w-3 h-3 rounded-sm bg-[#1A6EC0] inline-block” /> Mes actual
+              <span className="flex items-center gap-1.5 text-[11px] text-[#9EA9BA]">
+                <span className="w-3 h-3 rounded-sm bg-[#1A6EC0] inline-block" /> Mes actual
               </span>
-              <span className=”flex items-center gap-1.5 text-[11px] text-[#9EA9BA]”>
-                <span className=”w-3 h-3 rounded-sm bg-[#BDD8F3] inline-block” /> Bajo objetivo
+              <span className="flex items-center gap-1.5 text-[11px] text-[#9EA9BA]">
+                <span className="w-3 h-3 rounded-sm bg-[#BDD8F3] inline-block" /> Bajo objetivo
               </span>
-              <span className=”flex items-center gap-1.5 text-[11px] text-[#C89035]”>
-                <span className=”w-5 border-t border-dashed border-[#C89035] inline-block” /> Objetivo
+              <span className="flex items-center gap-1.5 text-[11px] text-[#C89035]">
+                <span className="w-5 border-t border-dashed border-[#C89035] inline-block" /> Objetivo
               </span>
             </div>
           </div>
         )}
 
-        {/* â”€â”€ KPI Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-        <div className=”grid grid-cols-2 xl:grid-cols-3 gap-4”>
+        {/* â"€â"€ KPI Cards â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
+        <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
           <StatCard
             icon={<ShoppingBag size={17} className="text-[#1A6EC0]" />}
             label="Ventas del mes"
@@ -528,7 +528,7 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* â”€â”€ Bottom grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* â"€â"€ Bottom grid â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
 
           {/* Últimas ventas */}
