@@ -776,6 +776,24 @@ export async function createInvoice(
   return { ...data, id, createdAt: now };
 }
 
+export async function updateInvoice(
+  accessToken: string,
+  id: string,
+  patch: Partial<Pick<Invoice, "fileName" | "driveFileId" | "driveUrl">>
+): Promise<void> {
+  const rows = await readSheet(accessToken, "Facturas!A2:O");
+  const rowIndex = rows.findIndex((r) => r[0] === id);
+  if (rowIndex === -1) throw new Error("Invoice not found");
+  const inv = rowToInvoice(rows[rowIndex]);
+  const u = { ...inv, ...patch };
+  await updateRow(accessToken, "Facturas", rowIndex + 2, [
+    u.id, u.direction, u.month, u.number, u.provider,
+    u.fileName, u.driveFileId, u.driveUrl,
+    String(u.amount), u.currency, u.date,
+    u.description, u.notes, u.createdAt, u.exenta ? "true" : "false",
+  ]);
+}
+
 export async function deleteInvoice(accessToken: string, id: string): Promise<{ driveFileId: string }> {
   const sheets = getSheets(accessToken);
   const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });

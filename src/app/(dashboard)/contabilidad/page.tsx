@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import {
   Receipt, TrendingUp, TrendingDown, PiggyBank, Calculator,
   Plus, Trash2, ChevronLeft, ChevronRight, AlertCircle, CheckCircle,
+  Paperclip, ExternalLink, Loader2,
 } from "lucide-react";
 import { Sale, Expense, Invoice } from "@/types";
 
@@ -81,6 +82,7 @@ export default function ContabilidadPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [uploading, setUploading] = useState<string | null>(null);
   const [providerSuggestions, setProviderSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -195,6 +197,15 @@ export default function ContabilidadPage() {
     setDeleting(id);
     await fetch(`/api/facturas/${id}`, { method: "DELETE" });
     setDeleting(null);
+    load();
+  }
+
+  async function handleAttach(id: string, file: File) {
+    setUploading(id);
+    const fd = new FormData();
+    fd.append("file", file);
+    await fetch(`/api/facturas/${id}`, { method: "PATCH", body: fd });
+    setUploading(null);
     load();
   }
 
@@ -512,6 +523,7 @@ export default function ContabilidadPage() {
                   <th className="text-right px-4 py-3 font-semibold">Monto total</th>
                   <th className="text-right px-4 py-3 font-semibold">IVA crédito</th>
                   <th className="text-center px-4 py-3 font-semibold">Tipo</th>
+                  <th className="text-center px-4 py-3 font-semibold">Doc.</th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
@@ -537,6 +549,34 @@ export default function ContabilidadPage() {
                         }`}>
                           {inv.exenta ? "Exenta" : "Afecta"}
                         </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {uploading === inv.id ? (
+                          <Loader2 size={14} className="animate-spin text-gray-400 mx-auto" />
+                        ) : inv.driveUrl ? (
+                          <a
+                            href={inv.driveUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-blue-500 hover:text-blue-700 text-[11px] font-medium transition-colors"
+                            title="Ver documento"
+                          >
+                            <ExternalLink size={13} />
+                          </a>
+                        ) : (
+                          <label className="cursor-pointer text-gray-300 hover:text-indigo-500 transition-colors inline-flex" title="Adjuntar documento">
+                            <Paperclip size={14} />
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept=".pdf,.xml,.png,.jpg,.jpeg"
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) handleAttach(inv.id, f);
+                              }}
+                            />
+                          </label>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <button
