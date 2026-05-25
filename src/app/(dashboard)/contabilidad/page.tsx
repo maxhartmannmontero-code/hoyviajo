@@ -656,7 +656,7 @@ export default function ContabilidadPage() {
             <button
               onClick={() => invoiceTab === "recibida" ? setShowForm(!showForm) : setShowFormEmitida(!showFormEmitida)}
               className="flex items-center gap-2 bg-gray-900 text-white text-[13px] font-semibold px-4 py-2 rounded-xl hover:bg-gray-700 transition-colors">
-              <Plus size={15} /> Agregar
+              <Plus size={15} /> {invoiceTab === "recibida" ? "Agregar recibida" : "Agregar emitida"}
             </button>
           </div>
         </div>
