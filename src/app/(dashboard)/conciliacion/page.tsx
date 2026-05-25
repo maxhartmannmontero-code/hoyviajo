@@ -433,18 +433,25 @@ function MatchModal({
                     </button>
                   ))
             ) : (
-              filteredExpenses.length === 0
-                ? <p className="text-center py-6 text-xs text-gray-400">No hay gastos que coincidan</p>
-                : filteredExpenses.map((e) => (
-                    <button key={e.id} disabled={saving} onClick={() => link(e.id, "expense", `${e.category} — ${e.description}`)}
-                      className="w-full flex items-center justify-between px-4 py-3 hover:bg-blue-50 text-left transition-colors">
-                      <div>
-                        <p className="text-sm font-medium text-gray-800">{e.description}</p>
-                        <p className="text-xs text-gray-400">{e.category} · {e.month}</p>
-                      </div>
-                      <span className="text-sm font-semibold text-red-600">{fmtCLP(e.amount)}</span>
-                    </button>
-                  ))
+              <>
+                {filteredExpenses.length === 0
+                  ? <p className="text-center py-6 text-xs text-gray-400">No hay gastos que coincidan</p>
+                  : filteredExpenses.map((e) => (
+                      <button key={e.id} disabled={saving} onClick={() => link(e.id, "expense", `${e.category} — ${e.description}`)}
+                        className="w-full flex items-center justify-between px-4 py-3 hover:bg-blue-50 text-left transition-colors">
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">{e.description}</p>
+                          <p className="text-xs text-gray-400">{e.category} · {e.month}</p>
+                        </div>
+                        <span className="text-sm font-semibold text-red-600">{fmtCLP(e.amount)}</span>
+                      </button>
+                    ))
+                }
+                <button disabled={saving} onClick={() => link("", "expense", "Gasto sin documento")}
+                  className="w-full flex items-center gap-2 px-4 py-3 hover:bg-orange-50 text-left transition-colors border-t border-dashed border-gray-200">
+                  <span className="text-xs font-medium text-orange-600">+ Gasto sin documento (no registrado en CRM)</span>
+                </button>
+              </>
             )}
           </div>
         </div>
