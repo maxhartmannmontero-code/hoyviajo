@@ -85,6 +85,8 @@ export default function ContabilidadPage() {
   const [uploading, setUploading] = useState<string | null>(null);
   const [providerSuggestions, setProviderSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [descSuggestions, setDescSuggestions] = useState<string[]>([]);
+  const [showDescSuggestions, setShowDescSuggestions] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -191,6 +193,20 @@ export default function ContabilidadPage() {
   function selectProvider(name: string) {
     setForm({ ...form, provider: name });
     setShowSuggestions(false);
+  }
+
+  function handleDescChange(value: string) {
+    setForm({ ...form, description: value });
+    if (value.length < 2) { setShowDescSuggestions(false); return; }
+    const known = [...new Set(invoices.map((i) => i.description).filter(Boolean))];
+    const matches = known.filter((d) => d.toLowerCase().includes(value.toLowerCase()));
+    setDescSuggestions(matches);
+    setShowDescSuggestions(matches.length > 0);
+  }
+
+  function selectDesc(desc: string) {
+    setForm({ ...form, description: desc });
+    setShowDescSuggestions(false);
   }
 
   async function handleDelete(id: string) {
@@ -464,14 +480,29 @@ export default function ContabilidadPage() {
                   placeholder="0"
                 />
               </div>
-              <div className="sm:col-span-2">
+              <div className="sm:col-span-2 relative">
                 <label className="block text-[11px] font-semibold text-gray-500 mb-1">Descripción</label>
                 <input
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-gray-300"
                   value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  onChange={(e) => handleDescChange(e.target.value)}
+                  onBlur={() => setTimeout(() => setShowDescSuggestions(false), 150)}
                   placeholder="Ej: Arriendo oficina, suscripción software..."
+                  autoComplete="off"
                 />
+                {showDescSuggestions && (
+                  <ul className="absolute z-20 top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                    {descSuggestions.map((d) => (
+                      <li
+                        key={d}
+                        onMouseDown={() => selectDesc(d)}
+                        className="px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50 cursor-pointer"
+                      >
+                        {d}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
               <div className="sm:col-span-2">
                 <label className="flex items-center gap-3 cursor-pointer select-none">
