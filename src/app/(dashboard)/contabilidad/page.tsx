@@ -81,6 +81,8 @@ export default function ContabilidadPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [providerSuggestions, setProviderSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -173,6 +175,20 @@ export default function ContabilidadPage() {
     setShowForm(false);
     setSaving(false);
     load();
+  }
+
+  function handleProviderChange(value: string) {
+    setForm({ ...form, provider: value });
+    if (value.length < 2) { setShowSuggestions(false); return; }
+    const known = [...new Set(invoices.map((i) => i.provider).filter(Boolean))];
+    const matches = known.filter((p) => p.toLowerCase().includes(value.toLowerCase()));
+    setProviderSuggestions(matches);
+    setShowSuggestions(matches.length > 0);
+  }
+
+  function selectProvider(name: string) {
+    setForm({ ...form, provider: name });
+    setShowSuggestions(false);
   }
 
   async function handleDelete(id: string) {
@@ -385,14 +401,29 @@ export default function ContabilidadPage() {
           <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-4 shadow-sm">
             <h3 className="text-[13px] font-bold text-gray-700 mb-4">Nueva factura de compra</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
+              <div className="relative">
                 <label className="block text-[11px] font-semibold text-gray-500 mb-1">Proveedor *</label>
                 <input
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-gray-300"
                   value={form.provider}
-                  onChange={(e) => setForm({ ...form, provider: e.target.value })}
+                  onChange={(e) => handleProviderChange(e.target.value)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                   placeholder="Nombre del proveedor"
+                  autoComplete="off"
                 />
+                {showSuggestions && (
+                  <ul className="absolute z-20 top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                    {providerSuggestions.map((p) => (
+                      <li
+                        key={p}
+                        onMouseDown={() => selectProvider(p)}
+                        className="px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50 cursor-pointer"
+                      >
+                        {p}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-gray-500 mb-1">N° Factura</label>
