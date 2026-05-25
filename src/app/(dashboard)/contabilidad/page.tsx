@@ -277,7 +277,9 @@ export default function ContabilidadPage() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [uploading, setUploading] = useState<string | null>(null);
   const [invoiceTab, setInvoiceTab] = useState<InvoiceDirection>("recibida");
-  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showFormEmitida, setShowFormEmitida] = useState(false);
+  const [formEmitida, setFormEmitida] = useState({ provider: "", number: "", date: "", amount: "", description: "" });
+  const [savingEmitida, setSavingEmitida] = useState(false);
   const [providerSuggestions, setProviderSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [descSuggestions, setDescSuggestions] = useState<string[]>([]);
@@ -311,6 +313,9 @@ export default function ContabilidadPage() {
 
   const facturasCompra = invoices.filter(
     (inv) => inv.direction === "recibida" && inv.month === selectedMonth
+  );
+  const facturasEmitidas = invoices.filter(
+    (inv) => inv.direction === "emitida" && inv.month === selectedMonth
   );
   const ivaCredito = facturasCompra
     .filter((inv) => !inv.exenta)
@@ -408,6 +413,28 @@ export default function ContabilidadPage() {
     setDeleting(id);
     await fetch(`/api/facturas/${id}`, { method: "DELETE" });
     setDeleting(null);
+    load();
+  }
+
+  async function handleAddEmitida() {
+    if (!formEmitida.provider || !formEmitida.amount || !formEmitida.date) return;
+    setSavingEmitida(true);
+    const fd = new FormData();
+    fd.append("direction", "emitida");
+    fd.append("month", selectedMonth);
+    fd.append("number", formEmitida.number);
+    fd.append("provider", formEmitida.provider);
+    fd.append("amount", formEmitida.amount);
+    fd.append("currency", "CLP");
+    fd.append("date", formEmitida.date);
+    fd.append("description", formEmitida.description);
+    fd.append("notes", "");
+    fd.append("exenta", "false");
+    fd.append("file", new Blob([], { type: "application/octet-stream" }), "sin-archivo.txt");
+    await fetch("/api/facturas", { method: "POST", body: fd });
+    setFormEmitida({ provider: "", number: "", date: "", amount: "", description: "" });
+    setShowFormEmitida(false);
+    setSavingEmitida(false);
     load();
   }
 
@@ -625,17 +652,11 @@ export default function ContabilidadPage() {
                 </button>
               ))}
             </div>
-            {invoiceTab === "recibida" ? (
-              <button onClick={() => setShowForm(!showForm)}
-                className="flex items-center gap-2 bg-gray-900 text-white text-[13px] font-semibold px-4 py-2 rounded-xl hover:bg-gray-700 transition-colors">
-                <Plus size={15} /> Agregar
-              </button>
-            ) : (
-              <button onClick={() => setShowUploadModal(true)}
-                className="flex items-center gap-2 bg-gray-900 text-white text-[13px] font-semibold px-4 py-2 rounded-xl hover:bg-gray-700 transition-colors">
-                <Upload size={15} /> Subir factura
-              </button>
-            )}
+            <button
+              onClick={() => invoiceTab === "recibida" ? setShowForm(!showForm) : setShowFormEmitida(!showFormEmitida)}
+              className="flex items-center gap-2 bg-gray-900 text-white text-[13px] font-semibold px-4 py-2 rounded-xl hover:bg-gray-700 transition-colors">
+              <Plus size={15} /> Agregar
+            </button>
           </div>
         </div>
 
@@ -793,20 +814,25 @@ export default function ContabilidadPage() {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-center">
-                            {uploading === inv.id ? (
-                              <Loader2 size={14} className="animate-spin text-gray-400 mx-auto" />
-                            ) : inv.driveUrl ? (
-                              <a href={inv.driveUrl} target="_blank" rel="noopener noreferrer"
-                                className="inline-flex text-blue-500 hover:text-blue-700 transition-colors">
-                                <ExternalLink size={13} />
-                              </a>
-                            ) : (
-                              <label className="cursor-pointer text-gray-300 hover:text-indigo-500 transition-colors inline-flex">
-                                <Paperclip size={14} />
-                                <input type="file" className="hidden" accept=".pdf,.xml,.png,.jpg,.jpeg"
-                                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAttach(inv.id, f); }} />
-                              </label>
-                            )}
+                            <div className="flex items-center justify-center gap-1">
+                              {uploading === inv.id ? (
+                                <Loader2 size={14} className="animate-spin text-gray-400" />
+                              ) : (
+                                <>
+                                  {inv.driveUrl && (
+                                    <a href={inv.driveUrl} target="_blank" rel="noopener noreferrer"
+                                      className="text-blue-400 hover:text-blue-600 transition-colors" title="Ver documento">
+                                      <ExternalLink size={13} />
+                                    </a>
+                                  )}
+                                  <label className="cursor-pointer text-gray-300 hover:text-indigo-500 transition-colors" title="Adjuntar documento">
+                                    <Paperclip size={14} />
+                                    <input type="file" className="hidden" accept=".pdf,.xml,.png,.jpg,.jpeg"
+                                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAttach(inv.id, f); }} />
+                                  </label>
+                                </>
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-3 text-right">
                             <button onClick={() => handleDelete(inv.id)} disabled={deleting === inv.id}
@@ -834,34 +860,132 @@ export default function ContabilidadPage() {
           </>
         )}
 
-        {invoiceTab === "emitida" && (() => {
-          const emitidas = invoices.filter((i) => i.direction === "emitida");
-          const byMonth = emitidas.reduce<Record<string, Invoice[]>>((acc, inv) => {
-            const key = inv.month || "sin-mes";
-            if (!acc[key]) acc[key] = [];
-            acc[key].push(inv);
-            return acc;
-          }, {});
-          const months = Object.keys(byMonth).sort((a, b) => b.localeCompare(a));
-          return months.length === 0 ? (
-            <div className="bg-white border border-dashed border-gray-200 rounded-2xl px-6 py-10 text-center">
-              <AlertCircle size={24} className="mx-auto text-gray-300 mb-2" />
-              <p className="text-[13px] text-gray-400">No hay facturas emitidas aún.</p>
-              <button onClick={() => setShowUploadModal(true)}
-                className="mt-2 text-[12px] text-indigo-500 hover:underline">Subir la primera</button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {months.map((month) => (
-                <MonthFolder key={month} month={month} invoices={byMonth[month]}
-                  onDelete={handleDelete} onAttach={handleAttach} uploading={uploading} />
-              ))}
-            </div>
-          );
-        })()}
+        {invoiceTab === "emitida" && (
+          <>
+            {showFormEmitida && (
+              <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-4 shadow-sm">
+                <h3 className="text-[13px] font-bold text-gray-700 mb-4">Nueva factura emitida</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-500 mb-1">Cliente *</label>
+                    <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-gray-300"
+                      value={formEmitida.provider} onChange={(e) => setFormEmitida({ ...formEmitida, provider: e.target.value })}
+                      placeholder="Nombre del cliente" />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-500 mb-1">N° Factura</label>
+                    <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-gray-300"
+                      value={formEmitida.number} onChange={(e) => setFormEmitida({ ...formEmitida, number: e.target.value })}
+                      placeholder="Ej: 123" />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-500 mb-1">Fecha *</label>
+                    <input type="date" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-gray-300"
+                      value={formEmitida.date} onChange={(e) => setFormEmitida({ ...formEmitida, date: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-500 mb-1">Monto total (con IVA) *</label>
+                    <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-gray-300"
+                      value={formEmitida.amount} onChange={(e) => setFormEmitida({ ...formEmitida, amount: e.target.value })}
+                      placeholder="0" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-[11px] font-semibold text-gray-500 mb-1">Descripción</label>
+                    <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-gray-300"
+                      value={formEmitida.description} onChange={(e) => setFormEmitida({ ...formEmitida, description: e.target.value })}
+                      placeholder="Ej: Comisión servicios de viaje..." />
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <button onClick={handleAddEmitida}
+                    disabled={savingEmitida || !formEmitida.provider || !formEmitida.amount || !formEmitida.date}
+                    className="bg-gray-900 text-white text-[13px] font-semibold px-5 py-2 rounded-xl hover:bg-gray-700 transition-colors disabled:opacity-40">
+                    {savingEmitida ? "Guardando..." : "Guardar"}
+                  </button>
+                  <button onClick={() => { setShowFormEmitida(false); setFormEmitida({ provider: "", number: "", date: "", amount: "", description: "" }); }}
+                    className="text-[13px] text-gray-500 px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors">
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
 
-        {showUploadModal && (
-          <UploadModal direction="emitida" onClose={() => setShowUploadModal(false)} onSave={load} />
+            {facturasEmitidas.length === 0 && !showFormEmitida ? (
+              <div className="bg-white border border-dashed border-gray-200 rounded-2xl px-6 py-10 text-center">
+                <AlertCircle size={24} className="mx-auto text-gray-300 mb-2" />
+                <p className="text-[13px] text-gray-400">No hay facturas emitidas para este mes.</p>
+              </div>
+            ) : facturasEmitidas.length > 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <table className="w-full text-[13px]">
+                  <thead>
+                    <tr className="bg-gray-50 text-gray-400 text-[11px] uppercase tracking-wider">
+                      <th className="text-left px-5 py-3 font-semibold">Cliente</th>
+                      <th className="text-left px-4 py-3 font-semibold">N°</th>
+                      <th className="text-left px-4 py-3 font-semibold">Fecha</th>
+                      <th className="text-right px-4 py-3 font-semibold">Monto total</th>
+                      <th className="text-right px-4 py-3 font-semibold">IVA débito</th>
+                      <th className="text-center px-4 py-3 font-semibold">Doc.</th>
+                      <th className="px-4 py-3" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {facturasEmitidas.map((inv, i) => {
+                      const ivaRow = inv.amount * IVA_RATE / (1 + IVA_RATE);
+                      return (
+                        <tr key={inv.id} className={`border-t border-gray-50 ${i % 2 === 0 ? "" : "bg-gray-50/40"}`}>
+                          <td className="px-5 py-3 font-medium text-gray-800">{inv.provider}</td>
+                          <td className="px-4 py-3 text-gray-500">{inv.number || "—"}</td>
+                          <td className="px-4 py-3 text-gray-500">{inv.date || "—"}</td>
+                          <td className="px-4 py-3 text-right font-semibold text-gray-700 tabular-nums">{fmtCLP(inv.amount)}</td>
+                          <td className="px-4 py-3 text-right font-semibold text-red-500 tabular-nums">{fmtCLP(ivaRow)}</td>
+                          <td className="px-4 py-3 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              {uploading === inv.id ? (
+                                <Loader2 size={14} className="animate-spin text-gray-400" />
+                              ) : (
+                                <>
+                                  {inv.driveUrl && (
+                                    <a href={inv.driveUrl} target="_blank" rel="noopener noreferrer"
+                                      className="text-blue-400 hover:text-blue-600 transition-colors" title="Ver documento">
+                                      <ExternalLink size={13} />
+                                    </a>
+                                  )}
+                                  <label className="cursor-pointer text-gray-300 hover:text-indigo-500 transition-colors" title="Adjuntar documento">
+                                    <Paperclip size={14} />
+                                    <input type="file" className="hidden" accept=".pdf,.xml,.png,.jpg,.jpeg"
+                                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAttach(inv.id, f); }} />
+                                  </label>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <button onClick={() => handleDelete(inv.id)} disabled={deleting === inv.id}
+                              className="text-gray-300 hover:text-red-500 transition-colors">
+                              <Trash2 size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t-2 border-gray-200 bg-gray-50">
+                      <td colSpan={3} className="px-5 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total</td>
+                      <td className="px-4 py-3 text-right font-bold text-gray-700 tabular-nums">
+                        {fmtCLP(facturasEmitidas.reduce((a, i) => a + i.amount, 0))}
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-red-500 tabular-nums">
+                        {fmtCLP(facturasEmitidas.reduce((a, i) => a + i.amount * IVA_RATE / (1 + IVA_RATE), 0))}
+                      </td>
+                      <td colSpan={2} />
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            ) : null}
+          </>
         )}
       </section>
     </div>
