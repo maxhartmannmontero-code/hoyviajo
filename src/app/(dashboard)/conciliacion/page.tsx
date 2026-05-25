@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import {
-  Upload, X, Search, CheckCircle2, Clock, EyeOff,
+  Upload, X, Search, CheckCircle2, Clock,
   Link2, Unlink, Trash2, TrendingUp, TrendingDown, AlertCircle, Plus,
   ArrowDownToLine, ArrowUpFromLine,
 } from "lucide-react";
@@ -26,7 +26,7 @@ function currentMonth() {
 const STATUS_CONFIG: Record<BankTxStatus, { label: string; color: string; Icon: React.ElementType }> = {
   pendiente:  { label: "Pendiente",  color: "bg-yellow-100 text-yellow-700", Icon: Clock       },
   conciliado: { label: "Conciliado", color: "bg-green-100 text-green-700",   Icon: CheckCircle2 },
-  ignorado:   { label: "Ignorado",   color: "bg-gray-100 text-gray-500",     Icon: EyeOff       },
+  ignorado:   { label: "Ignorado",   color: "bg-gray-100 text-gray-500",     Icon: Clock        },
 };
 
 // ─── Manual Entry Modal ────────────────────────────────────────────────────
@@ -872,11 +872,6 @@ export default function ConciliacionPage() {
                                   title="Vincular a factura, venta o gasto"
                                   className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors">
                                   <Link2 size={14} />
-                                </button>
-                                <button onClick={() => ignore(tx)} disabled={busy}
-                                  title="Ignorar"
-                                  className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                                  <EyeOff size={14} />
                                 </button>
                               </>
                             )}
