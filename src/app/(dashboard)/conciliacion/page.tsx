@@ -445,6 +445,7 @@ export default function ConciliacionPage() {
   const [showManual, setShowManual] = useState(false);
   const [matchTx, setMatchTx] = useState<BankTransaction | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [seeding, setSeeding] = useState(false);
 
   async function fetchData() {
     const res = await fetch("/api/bank-transactions");
@@ -458,6 +459,52 @@ export default function ConciliacionPage() {
   }
 
   useEffect(() => { fetchData(); }, []);
+
+  async function seedMay() {
+    if (!confirm("¿Cargar los 33 movimientos de mayo 2026?")) return;
+    setSeeding(true);
+    await fetch("/api/bank-transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ batch: [
+        { date: "2026-05-04", description: "Pago:e-Agencias",                            debit: 18503,   credit: 0 },
+        { date: "2026-05-04", description: "Pago:ratehawk.com",                           debit: 93268,   credit: 0 },
+        { date: "2026-05-04", description: "Traspaso De:maximiliano",                     debit: 0,       credit: 100000 },
+        { date: "2026-05-04", description: "App-Traspaso A:carolina Matthews",            debit: 20000,   credit: 0 },
+        { date: "2026-05-04", description: "App-Traspaso A:max Hartmann",                 debit: 25000,   credit: 0 },
+        { date: "2026-05-04", description: "App-Traspaso A:carolina Matthews",            debit: 25000,   credit: 0 },
+        { date: "2026-05-04", description: "App-Traspaso A:carolina Matthews",            debit: 52000,   credit: 0 },
+        { date: "2026-05-04", description: "Pago:shellbalmaceda288",                      debit: 15000,   credit: 0 },
+        { date: "2026-05-04", description: "Pago:mc Donalds",                             debit: 8590,    credit: 0 },
+        { date: "2026-05-04", description: "Pago:sodimac La Serena",                      debit: 9081,    credit: 0 },
+        { date: "2026-05-05", description: "App-Traspaso A:max Hartmann",                 debit: 20000,   credit: 0 },
+        { date: "2026-05-05", description: "App-Traspaso A:pablo Alexis Arellano Pineda", debit: 150000,  credit: 0 },
+        { date: "2026-05-05", description: "App-Traspaso A:carolina Matthews",            debit: 69000,   credit: 0 },
+        { date: "2026-05-05", description: "Traspaso De:maximiliano",                     debit: 0,       credit: 120000 },
+        { date: "2026-05-15", description: "Comision Compras En El Extranjero",           debit: 440,     credit: 0 },
+        { date: "2026-05-15", description: "Comision Compras En El Extranjero",           debit: 443,     credit: 0 },
+        { date: "2026-05-15", description: "App-Traspaso A:zeus Chile",                   debit: 59500,   credit: 0 },
+        { date: "2026-05-15", description: "App-Traspaso A:carolina Matthews",            debit: 225000,  credit: 0 },
+        { date: "2026-05-15", description: "Pago:proveedores 0969078309",                 debit: 0,       credit: 1103000 },
+        { date: "2026-05-18", description: "App-Traspaso A:carolina Matthews",            debit: 57000,   credit: 0 },
+        { date: "2026-05-18", description: "App-Traspaso A:max Hartmann",                 debit: 10000,   credit: 0 },
+        { date: "2026-05-18", description: "App-Traspaso A:carolina Matthews",            debit: 50000,   credit: 0 },
+        { date: "2026-05-19", description: "App-Traspaso A:carolina Matthews",            debit: 30000,   credit: 0 },
+        { date: "2026-05-20", description: "App-Traspaso A:carolina Matthews",            debit: 20000,   credit: 0 },
+        { date: "2026-05-22", description: "App-Traspaso A:carolina Matthews",            debit: 25000,   credit: 0 },
+        { date: "2026-05-22", description: "App-Traspaso A:carolina Matthews",            debit: 25000,   credit: 0 },
+        { date: "2026-05-22", description: "App-Traspaso A:carolina Matthews",            debit: 25000,   credit: 0 },
+        { date: "2026-05-25", description: "App-Traspaso A:carolina Matthews",            debit: 25000,   credit: 0 },
+        { date: "2026-05-25", description: "App-Traspaso A:max Hartmann",                 debit: 20000,   credit: 0 },
+        { date: "2026-05-25", description: "App-Traspaso A:carolina Matthews",            debit: 30000,   credit: 0 },
+        { date: "2026-05-25", description: "Pago:claude.ai Subscri",                      debit: 22015,   credit: 0 },
+        { date: "2026-05-25", description: "App-Traspaso A:carolina Matthews",            debit: 15000,   credit: 0 },
+        { date: "2026-05-25", description: "App-Traspaso A:carolina Matthews",            debit: 50000,   credit: 0 },
+      ]}),
+    });
+    setSeeding(false);
+    fetchData();
+  }
 
   async function ignore(tx: BankTransaction) {
     setActionLoading(tx.id);
@@ -527,6 +574,10 @@ export default function ConciliacionPage() {
           <p className="text-sm text-gray-500 mt-1">Cruza tu cartola de Banco de Chile con las ventas y gastos del CRM</p>
         </div>
         <div className="flex items-center gap-2">
+          <button onClick={seedMay} disabled={seeding}
+            className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 text-amber-700 text-sm font-medium rounded-xl hover:bg-amber-100 disabled:opacity-50">
+            {seeding ? "Cargando..." : "Cargar Mayo 2026"}
+          </button>
           <button onClick={() => setShowManual(true)}
             className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-xl hover:border-gray-300 hover:bg-gray-50">
             <Plus size={16} /> Agregar manual
