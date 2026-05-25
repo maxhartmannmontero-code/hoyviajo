@@ -307,16 +307,18 @@ export default function ContabilidadPage() {
     return ref.slice(0, 7) === selectedMonth;
   });
 
-  const commissionsGross = salesOfMonth.reduce((a, s) => a + (s.commission || 0), 0);
-  const commissionsNet = commissionsGross / (1 + IVA_RATE);
-  const ivaDebito = commissionsGross - commissionsNet;
-
   const facturasCompra = invoices.filter(
     (inv) => inv.direction === "recibida" && inv.month === selectedMonth
   );
   const facturasEmitidas = invoices.filter(
     (inv) => inv.direction === "emitida" && inv.month === selectedMonth
   );
+
+  // Fuente de verdad fiscal: facturas emitidas (lo que ve el SII)
+  const commissionsGross = facturasEmitidas.reduce((a, i) => a + i.amount, 0);
+  const commissionsNet = commissionsGross / (1 + IVA_RATE);
+  const ivaDebito = commissionsGross - commissionsNet;
+
   const ivaCredito = facturasCompra
     .filter((inv) => !inv.exenta)
     .reduce((a, inv) => a + inv.amount * IVA_RATE / (1 + IVA_RATE), 0);
@@ -328,15 +330,14 @@ export default function ContabilidadPage() {
   const expensesOfMonth = expenses.filter((e) => e.month === selectedMonth);
   const expensesTotal = expensesOfMonth.reduce((a, e) => a + e.amount, 0);
 
-  // YTD para provisión renta
+  // YTD desde facturas emitidas (fuente fiscal)
   const currentYear = selectedMonth.slice(0, 4);
   const monthsElapsed = parseInt(selectedMonth.slice(5, 7));
 
-  const ytdSales = sales.filter((s) => {
-    const ref = s.saleDate || s.createdAt || "";
-    return ref.startsWith(currentYear);
-  });
-  const ytdCommissionsGross = ytdSales.reduce((a, s) => a + (s.commission || 0), 0);
+  const ytdEmitidas = invoices.filter(
+    (i) => i.direction === "emitida" && i.month?.startsWith(currentYear)
+  );
+  const ytdCommissionsGross = ytdEmitidas.reduce((a, i) => a + i.amount, 0);
   const ytdCommissionsNet = ytdCommissionsGross / (1 + IVA_RATE);
 
   const ytdExpenses = expenses
@@ -349,7 +350,7 @@ export default function ContabilidadPage() {
     : 0;
   const estimatedAnnualTax = Math.max(estimatedAnnualUtilidad * RENTA_RATE, 0);
 
-  const ytdPPMPaid = (ytdCommissionsNet) * PPM_RATE;
+  const ytdPPMPaid = ytdCommissionsNet * PPM_RATE;
   const taxGap = Math.max(estimatedAnnualTax - ytdPPMPaid, 0);
   const monthsRemaining = Math.max(12 - monthsElapsed + 1, 1);
   const monthlyProvision = taxGap / monthsRemaining;
@@ -496,7 +497,7 @@ export default function ContabilidadPage() {
             icon={<TrendingUp size={15} className="text-red-500" />}
             label="Débito fiscal"
             value={fmtCLP(ivaDebito)}
-            sub={`IVA de ${fmtCLP(commissionsGross)} en comisiones`}
+            sub={`IVA de ${facturasEmitidas.length} facturas emitidas del mes`}
             color="text-red-600"
           />
           <TaxCard
@@ -516,11 +517,11 @@ export default function ContabilidadPage() {
           />
         </div>
         <div className="mt-3 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-[12px] text-blue-700">
-          <strong>Comisión neta (sin IVA):</strong> {fmtCLP(commissionsNet)}
+          <strong>Monto neto facturas emitidas (sin IVA):</strong> {fmtCLP(commissionsNet)}
           {" · "}
-          <strong>Comisión bruta (con IVA):</strong> {fmtCLP(commissionsGross)}
+          <strong>Monto bruto (con IVA):</strong> {fmtCLP(commissionsGross)}
           {" · "}
-          <strong>Ventas brutas del período:</strong> {fmtCLP(salesOfMonth.reduce((a, s) => a + s.amount, 0))}
+          <strong>Ventas brutas del período (referencia):</strong> {fmtCLP(salesOfMonth.reduce((a, s) => a + s.amount, 0))}
         </div>
       </section>
 
@@ -603,7 +604,7 @@ export default function ContabilidadPage() {
         />
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           {[
-            { label: "Comisiones brutas (con IVA)", value: commissionsGross, plus: true },
+            { label: "Facturas emitidas del mes (con IVA)", value: commissionsGross, plus: true },
             { label: "− IVA neto a pagar", value: -ivaNeto },
             { label: "− PPM del mes", value: -ppmAmount },
             { label: "− Gastos operativos", value: -expensesTotal },
