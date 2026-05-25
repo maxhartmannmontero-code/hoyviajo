@@ -600,6 +600,17 @@ export default function ConciliacionPage() {
   const pending = byMonth.filter((t) => t.status === "pendiente").length;
   const conciliado = byMonth.filter((t) => t.status === "conciliado").length;
 
+  // Desglose por categoría (solo egresos clasificados)
+  const desglose = {
+    retiro:       byMonth.filter(t => t.matchedType === "retiro").reduce((s,t) => s + t.debit, 0),
+    capital:      byMonth.filter(t => t.matchedType === "capital").reduce((s,t) => s + t.credit, 0),
+    gastoDoc:     byMonth.filter(t => t.matchedType === "expense" && t.matchedLabel !== "Gasto sin documento" && t.debit > 0).reduce((s,t) => s + t.debit, 0),
+    gastoSinDoc:  byMonth.filter(t => t.matchedType === "expense" && t.matchedLabel === "Gasto sin documento").reduce((s,t) => s + t.debit, 0),
+    ingreso:      byMonth.filter(t => t.matchedType === "sale" && t.credit > 0).reduce((s,t) => s + t.credit, 0),
+    pendiente:    byMonth.filter(t => t.status === "pendiente").reduce((s,t) => s + t.debit + t.credit, 0),
+  };
+  const totalDesglose = desglose.retiro + desglose.capital + desglose.gastoDoc + desglose.gastoSinDoc + desglose.ingreso + desglose.pendiente;
+
   // CRM data for the month
   const monthSalesTotal = sales
     .filter((s) => (s.saleDate || s.createdAt).slice(0, 7) === month)
@@ -737,6 +748,35 @@ export default function ConciliacionPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Desglose por categoría */}
+      {byMonth.length > 0 && (
+        <div className="bg-white border border-gray-100 rounded-2xl p-5 mb-5 shadow-sm">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Desglose del mes</p>
+          <div className="space-y-3">
+            {[
+              { label: "Ingreso comisión",      amount: desglose.ingreso,     color: "bg-green-500",  text: "text-green-700",  bg: "bg-green-50"  },
+              { label: "Aporte de capital",     amount: desglose.capital,     color: "bg-indigo-400", text: "text-indigo-700", bg: "bg-indigo-50" },
+              { label: "Retiro de utilidades",  amount: desglose.retiro,      color: "bg-purple-400", text: "text-purple-700", bg: "bg-purple-50" },
+              { label: "Gasto con documento",   amount: desglose.gastoDoc,    color: "bg-orange-400", text: "text-orange-700", bg: "bg-orange-50" },
+              { label: "Gasto sin documento",   amount: desglose.gastoSinDoc, color: "bg-red-400",    text: "text-red-700",    bg: "bg-red-50"    },
+              { label: "Pendiente clasificar",  amount: desglose.pendiente,   color: "bg-gray-300",   text: "text-gray-500",   bg: "bg-gray-50"   },
+            ].map(({ label, amount, color, text, bg }) => {
+              const pct = totalDesglose > 0 ? (amount / totalDesglose) * 100 : 0;
+              return (
+                <div key={label} className="flex items-center gap-3">
+                  <p className="text-xs text-gray-500 w-44 shrink-0">{label}</p>
+                  <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full ${color} transition-all duration-500`} style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className={`text-xs font-semibold w-28 text-right ${text}`}>{fmtCLP(amount)}</span>
+                  <span className="text-xs text-gray-300 w-10 text-right">{pct.toFixed(0)}%</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
