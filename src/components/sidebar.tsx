@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import {
   LayoutDashboard, Users, Kanban, FileText, Megaphone,
-  TrendingUp, LogOut, Receipt, GitCompare, SendHorizonal, FileBadge, BarChart2, Calculator,
+  TrendingUp, LogOut, Receipt, GitCompare, SendHorizonal, BarChart2, Calculator,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +29,6 @@ const navOps: NavItem[] = [
     children: [{ href: "/mailing", label: "Mailing", icon: SendHorizonal }],
   },
   { href: "/vouchers", label: "Vouchers", icon: FileText  },
-  { href: "/facturas", label: "Facturas", icon: FileBadge },
 ];
 
 function NavGroup({ items, pathname }: { items: NavItem[]; pathname: string }) {
