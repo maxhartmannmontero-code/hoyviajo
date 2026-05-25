@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import {
   Upload, X, Search, CheckCircle2, Clock, EyeOff,
-  Link2, Unlink, Trash2, TrendingUp, TrendingDown, AlertCircle,
+  Link2, Unlink, Trash2, TrendingUp, TrendingDown, AlertCircle, Plus,
 } from "lucide-react";
 import type { BankTransaction, BankTxStatus, Sale, Expense } from "@/types";
 
@@ -27,6 +27,130 @@ const STATUS_CONFIG: Record<BankTxStatus, { label: string; color: string; Icon: 
   conciliado: { label: "Conciliado", color: "bg-green-100 text-green-700",   Icon: CheckCircle2 },
   ignorado:   { label: "Ignorado",   color: "bg-gray-100 text-gray-500",     Icon: EyeOff       },
 };
+
+// ─── Manual Entry Modal ────────────────────────────────────────────────────
+
+function ManualEntryModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [description, setDescription] = useState("");
+  const [type, setType] = useState<"cargo" | "abono">("cargo");
+  const [amount, setAmount] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSave() {
+    const n = parseFloat(amount.replace(/\./g, "").replace(",", "."));
+    if (!date || !description.trim() || isNaN(n) || n <= 0) {
+      setError("Completa todos los campos con valores válidos.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    const res = await fetch("/api/bank-transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        manual: {
+          date,
+          description: description.trim(),
+          debit: type === "cargo" ? n : 0,
+          credit: type === "abono" ? n : 0,
+        },
+      }),
+    });
+    setSaving(false);
+    if (res.ok) {
+      onDone();
+      onClose();
+    } else {
+      const data = await res.json();
+      setError(data.error || "Error al guardar");
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
+        <div className="flex items-center justify-between p-5 border-b">
+          <h2 className="font-semibold text-gray-900">Agregar movimiento manual</h2>
+          <button onClick={onClose}><X size={20} className="text-gray-400" /></button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Fecha</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Descripción</label>
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Ej: Pago:ratehawk.com"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Tipo</label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setType("cargo")}
+                className={`flex-1 py-2 text-sm font-medium rounded-xl border transition-colors ${
+                  type === "cargo"
+                    ? "bg-red-50 border-red-300 text-red-700"
+                    : "border-gray-200 text-gray-500 hover:border-gray-300"
+                }`}
+              >
+                Cargo (egreso)
+              </button>
+              <button
+                onClick={() => setType("abono")}
+                className={`flex-1 py-2 text-sm font-medium rounded-xl border transition-colors ${
+                  type === "abono"
+                    ? "bg-green-50 border-green-300 text-green-700"
+                    : "border-gray-200 text-gray-500 hover:border-gray-300"
+                }`}
+              >
+                Abono (ingreso)
+              </button>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Monto (CLP)</label>
+            <input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="18503"
+              min="0"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          {error && (
+            <div className="flex items-center gap-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">
+              <AlertCircle size={13} /> {error}
+            </div>
+          )}
+        </div>
+        <div className="flex justify-end gap-3 p-5 border-t">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600">Cancelar</button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50"
+          >
+            <Plus size={14} /> {saving ? "Guardando..." : "Agregar"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── Import Modal ──────────────────────────────────────────────────────────
 
@@ -318,6 +442,7 @@ export default function ConciliacionPage() {
   const [statusFilter, setStatusFilter] = useState<BankTxStatus | "todos">("todos");
   const [search, setSearch] = useState("");
   const [showImport, setShowImport] = useState(false);
+  const [showManual, setShowManual] = useState(false);
   const [matchTx, setMatchTx] = useState<BankTransaction | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -401,10 +526,16 @@ export default function ConciliacionPage() {
           <h1 className="text-2xl font-bold text-gray-900">Conciliación Bancaria</h1>
           <p className="text-sm text-gray-500 mt-1">Cruza tu cartola de Banco de Chile con las ventas y gastos del CRM</p>
         </div>
-        <button onClick={() => setShowImport(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700">
-          <Upload size={16} /> Importar CSV
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowManual(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-xl hover:border-gray-300 hover:bg-gray-50">
+            <Plus size={16} /> Agregar manual
+          </button>
+          <button onClick={() => setShowImport(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700">
+            <Upload size={16} /> Importar CSV
+          </button>
+        </div>
       </div>
 
       {/* Stats row */}
@@ -523,11 +654,17 @@ export default function ConciliacionPage() {
         <div className="text-center py-20 text-gray-400">
           <Upload size={48} className="mx-auto mb-4 opacity-20" />
           <p className="text-base font-medium text-gray-500 mb-1">No hay transacciones importadas</p>
-          <p className="text-sm mb-4">Importa tu cartola CSV de Banco de Chile para comenzar</p>
-          <button onClick={() => setShowImport(true)}
-            className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700">
-            Importar CSV
-          </button>
+          <p className="text-sm mb-4">Agrega movimientos manualmente o importa tu cartola CSV</p>
+          <div className="flex items-center justify-center gap-3">
+            <button onClick={() => setShowManual(true)}
+              className="px-5 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-50">
+              Agregar manual
+            </button>
+            <button onClick={() => setShowImport(true)}
+              className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700">
+              Importar CSV
+            </button>
+          </div>
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -623,6 +760,7 @@ export default function ConciliacionPage() {
         </div>
       )}
 
+      {showManual && <ManualEntryModal onClose={() => setShowManual(false)} onDone={fetchData} />}
       {showImport && <ImportModal onClose={() => setShowImport(false)} onDone={fetchData} />}
       {matchTx && (
         <MatchModal

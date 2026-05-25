@@ -20,7 +20,18 @@ export async function POST(req: NextRequest) {
   const token = await getAccessToken();
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { csv } = await req.json() as { csv: string };
+  const body = await req.json() as { csv?: string; manual?: { date: string; description: string; debit: number; credit: number } };
+
+  // Manual single-transaction entry
+  if (body.manual) {
+    const { date, description, debit, credit } = body.manual;
+    if (!date || !description) return NextResponse.json({ error: "date and description required" }, { status: 400 });
+    await initSpreadsheet(token);
+    const imported = await importBankTransactions(token, [{ date, description, docNumber: "", debit, credit, balance: 0 }]);
+    return NextResponse.json({ imported, skipped: 0, total: 1 });
+  }
+
+  const { csv } = body;
   if (!csv) return NextResponse.json({ error: "csv required" }, { status: 400 });
 
   const parsed = parseBancoChileCSV(csv);
