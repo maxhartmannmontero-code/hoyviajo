@@ -20,7 +20,11 @@ export async function POST(req: NextRequest) {
   const token = await getAccessToken();
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await req.json() as { csv?: string; manual?: { date: string; description: string; debit: number; credit: number } };
+  const body = await req.json() as {
+    csv?: string;
+    manual?: { date: string; description: string; debit: number; credit: number };
+    batch?: { date: string; description: string; debit: number; credit: number }[];
+  };
 
   // Manual single-transaction entry
   if (body.manual) {
