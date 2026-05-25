@@ -152,7 +152,7 @@ export interface BankTransaction {
   credit: number;
   balance: number;
   matchedId: string;
-  matchedType: "sale" | "expense" | "";
+  matchedType: "sale" | "expense" | "capital" | "retiro" | "";
   matchedLabel: string;
   status: BankTxStatus;
   importedAt: string;

@@ -4,8 +4,9 @@ import { useEffect, useState, useRef } from "react";
 import {
   Upload, X, Search, CheckCircle2, Clock, EyeOff,
   Link2, Unlink, Trash2, TrendingUp, TrendingDown, AlertCircle, Plus,
+  ArrowDownToLine, ArrowUpFromLine,
 } from "lucide-react";
-import type { BankTransaction, BankTxStatus, Sale, Expense } from "@/types";
+import type { BankTransaction, BankTxStatus, Sale, Expense, Invoice } from "@/types";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -311,16 +312,18 @@ function MatchModal({
   tx,
   sales,
   expenses,
+  invoices,
   onClose,
   onSave,
 }: {
   tx: BankTransaction;
   sales: Sale[];
   expenses: Expense[];
+  invoices: Invoice[];
   onClose: () => void;
   onSave: () => void;
 }) {
-  const [tab, setTab] = useState<"sale" | "expense">(tx.credit > 0 ? "sale" : "expense");
+  const [tab, setTab] = useState<"invoice" | "sale" | "expense">(tx.credit > 0 ? "invoice" : "expense");
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -379,13 +382,17 @@ function MatchModal({
           </div>
 
           <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
+            <button onClick={() => setTab("invoice")}
+              className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-colors ${tab === "invoice" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500"}`}>
+              Factura emitida ({invoices.filter(i => i.direction === "emitida").length})
+            </button>
             <button onClick={() => setTab("sale")}
               className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-colors ${tab === "sale" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500"}`}>
-              Vincular a venta ({sales.length})
+              Venta ({sales.length})
             </button>
             <button onClick={() => setTab("expense")}
               className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-colors ${tab === "expense" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500"}`}>
-              Vincular a gasto ({expenses.length})
+              Gasto ({expenses.length})
             </button>
           </div>
 
@@ -397,7 +404,22 @@ function MatchModal({
           </div>
 
           <div className="max-h-64 overflow-y-auto divide-y divide-gray-50 rounded-xl border border-gray-100">
-            {tab === "sale" ? (
+            {tab === "invoice" ? (
+              invoices.filter(i => i.direction === "emitida" && (!search || i.provider.toLowerCase().includes(search.toLowerCase()) || i.number.includes(search))).length === 0
+                ? <p className="text-center py-6 text-xs text-gray-400">No hay facturas emitidas</p>
+                : invoices.filter(i => i.direction === "emitida" && (!search || i.provider.toLowerCase().includes(search.toLowerCase()) || i.number.includes(search)))
+                    .sort((a, b) => b.date.localeCompare(a.date))
+                    .map((inv) => (
+                      <button key={inv.id} disabled={saving} onClick={() => link(inv.id, "sale", `Factura N°${inv.number} — ${inv.provider}`)}
+                        className="w-full flex items-center justify-between px-4 py-3 hover:bg-blue-50 text-left transition-colors">
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">{inv.provider}</p>
+                          <p className="text-xs text-gray-400">N°{inv.number} · {inv.date} · {inv.month}</p>
+                        </div>
+                        <span className="text-sm font-semibold text-green-700">{fmtCLP(inv.amount)}</span>
+                      </button>
+                    ))
+            ) : tab === "sale" ? (
               filteredSales.length === 0
                 ? <p className="text-center py-6 text-xs text-gray-400">No hay ventas que coincidan</p>
                 : filteredSales.map((s) => (
@@ -437,6 +459,7 @@ export default function ConciliacionPage() {
   const [transactions, setTransactions] = useState<BankTransaction[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [month, setMonth] = useState(currentMonth());
   const [statusFilter, setStatusFilter] = useState<BankTxStatus | "todos">("todos");
@@ -448,13 +471,17 @@ export default function ConciliacionPage() {
   const [seeding, setSeeding] = useState(false);
 
   async function fetchData() {
-    const res = await fetch("/api/bank-transactions");
-    if (res.ok) {
-      const data = await res.json();
+    const [txRes, invRes] = await Promise.all([
+      fetch("/api/bank-transactions"),
+      fetch("/api/facturas"),
+    ]);
+    if (txRes.ok) {
+      const data = await txRes.json();
       setTransactions(data.transactions ?? []);
       setSales(data.sales ?? []);
       setExpenses(data.expenses ?? []);
     }
+    if (invRes.ok) setInvoices(await invRes.json());
     setLoading(false);
   }
 
@@ -503,6 +530,17 @@ export default function ConciliacionPage() {
       ]}),
     });
     setSeeding(false);
+    fetchData();
+  }
+
+  async function markAs(tx: BankTransaction, matchedType: "capital" | "retiro", label: string) {
+    setActionLoading(tx.id);
+    await fetch(`/api/bank-transactions/${tx.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "conciliado", matchedId: "", matchedType, matchedLabel: label }),
+    });
+    setActionLoading(null);
     fetchData();
   }
 
@@ -769,8 +807,22 @@ export default function ConciliacionPage() {
                           <div className="flex items-center justify-end gap-1">
                             {tx.status === "pendiente" && (
                               <>
+                                {tx.credit > 0 && (
+                                  <button onClick={() => markAs(tx, "capital", "Aporte de capital")} disabled={busy}
+                                    title="Aporte de capital (no es ingreso operacional)"
+                                    className="px-2 py-1 text-[11px] font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                                    <ArrowDownToLine size={12} className="inline mr-0.5" />Capital
+                                  </button>
+                                )}
+                                {tx.debit > 0 && (
+                                  <button onClick={() => markAs(tx, "retiro", "Retiro de utilidades")} disabled={busy}
+                                    title="Retiro de utilidades (no es gasto operacional)"
+                                    className="px-2 py-1 text-[11px] font-medium text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
+                                    <ArrowUpFromLine size={12} className="inline mr-0.5" />Retiro
+                                  </button>
+                                )}
                                 <button onClick={() => setMatchTx(tx)} disabled={busy}
-                                  title="Vincular a venta o gasto"
+                                  title="Vincular a factura, venta o gasto"
                                   className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors">
                                   <Link2 size={14} />
                                 </button>
@@ -818,6 +870,7 @@ export default function ConciliacionPage() {
           tx={matchTx}
           sales={sales}
           expenses={expenses}
+          invoices={invoices}
           onClose={() => setMatchTx(null)}
           onSave={fetchData}
         />
