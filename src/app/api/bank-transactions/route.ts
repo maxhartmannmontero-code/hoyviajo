@@ -31,6 +31,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ imported, skipped: 0, total: 1 });
   }
 
+  // Batch manual entry
+  if (body.batch) {
+    const txs = (body.batch as Array<{ date: string; description: string; debit: number; credit: number }>)
+      .map(({ date, description, debit, credit }) => ({ date, description, docNumber: "", debit, credit, balance: 0 }));
+    await initSpreadsheet(token);
+    const imported = await importBankTransactions(token, txs);
+    return NextResponse.json({ imported, skipped: txs.length - imported, total: txs.length });
+  }
+
   const { csv } = body;
   if (!csv) return NextResponse.json({ error: "csv required" }, { status: 400 });
 
