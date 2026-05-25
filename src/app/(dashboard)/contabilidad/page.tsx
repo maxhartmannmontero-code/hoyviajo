@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Receipt, TrendingUp, TrendingDown, PiggyBank, Calculator,
   Plus, Trash2, ChevronLeft, ChevronRight, AlertCircle, CheckCircle,
-  Paperclip, ExternalLink, Loader2, Upload, X, FileText,
+  Paperclip, Eye, Loader2, Upload, X, FileText,
   ChevronDown,
 } from "lucide-react";
 import { Sale, Expense, Invoice, InvoiceDirection } from "@/types";
@@ -211,8 +211,8 @@ function MonthFolder({ month, invoices, onDelete, onAttach, uploading }: {
                   <Loader2 size={13} className="animate-spin text-gray-400" />
                 ) : inv.driveUrl ? (
                   <a href={inv.driveUrl} target="_blank" rel="noopener noreferrer"
-                    className="p-1.5 text-gray-400 hover:text-blue-600 rounded transition-colors">
-                    <ExternalLink size={13} />
+                    className="p-1.5 text-blue-500 hover:text-blue-700 rounded transition-colors" title="Ver documento">
+                    <Eye size={13} />
                   </a>
                 ) : (
                   <label className="p-1.5 text-gray-400 hover:text-indigo-500 rounded cursor-pointer transition-colors">
@@ -822,8 +822,8 @@ export default function ContabilidadPage() {
                                 <>
                                   {inv.driveUrl && (
                                     <a href={inv.driveUrl} target="_blank" rel="noopener noreferrer"
-                                      className="text-blue-400 hover:text-blue-600 transition-colors" title="Ver documento">
-                                      <ExternalLink size={13} />
+                                      className="text-blue-500 hover:text-blue-700 transition-colors" title="Ver documento">
+                                      <Eye size={14} />
                                     </a>
                                   )}
                                   <label className="cursor-pointer text-gray-300 hover:text-indigo-500 transition-colors" title="Adjuntar documento">
@@ -948,8 +948,8 @@ export default function ContabilidadPage() {
                                 <>
                                   {inv.driveUrl && (
                                     <a href={inv.driveUrl} target="_blank" rel="noopener noreferrer"
-                                      className="text-blue-400 hover:text-blue-600 transition-colors" title="Ver documento">
-                                      <ExternalLink size={13} />
+                                      className="text-blue-500 hover:text-blue-700 transition-colors" title="Ver documento">
+                                      <Eye size={14} />
                                     </a>
                                   )}
                                   <label className="cursor-pointer text-gray-300 hover:text-indigo-500 transition-colors" title="Adjuntar documento">
