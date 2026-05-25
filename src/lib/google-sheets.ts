@@ -394,12 +394,13 @@ function rowToSale(row: string[]): Sale {
     commission: parseFloat(row[14]) || 0,
     notes: row[15] || "",
     createdAt: row[16] || "",
+    tripNumber: row[18] || "",
   };
 }
 
 export async function getSales(accessToken: string): Promise<Sale[]> {
   try {
-    const rows = await readSheet(accessToken, "Sales!A2:R");
+    const rows = await readSheet(accessToken, "Sales!A2:S");
     return rows.filter((r) => r[0]).map(rowToSale);
   } catch {
     return [];
@@ -412,14 +413,26 @@ export async function createSale(
 ): Promise<Sale> {
   const now = new Date().toISOString();
   const id = data.id?.trim() || generateId();
+
+  const referenceDate = data.checkIn || data.travelDate || "";
+  const month = referenceDate.slice(0, 7);
+  const existingSales = await getSales(accessToken);
+  const maxNum = existingSales
+    .filter((s) => (s.checkIn || s.travelDate || "").slice(0, 7) === month)
+    .reduce((max, s) => {
+      const n = parseInt(s.tripNumber || "0", 10);
+      return n > max ? n : max;
+    }, 0);
+  const tripNumber = month ? String(maxNum + 1).padStart(2, "0") : "";
+
   const row = [
     id, data.travelDate, data.product, data.detail, data.checkIn, data.checkOut,
     data.status, data.paymentStatus, String(data.amount), data.currency,
     data.clientName, data.clientEmail, data.clientPhone, data.partner,
-    String(data.commission), data.notes, now, data.saleDate || "",
+    String(data.commission), data.notes, now, data.saleDate || "", tripNumber,
   ];
   await appendRow(accessToken, "Sales", row);
-  return { ...data, id, createdAt: now };
+  return { ...data, id, createdAt: now, tripNumber };
 }
 
 export async function updateSale(
@@ -427,7 +440,7 @@ export async function updateSale(
   id: string,
   data: Partial<Omit<Sale, "createdAt">>
 ): Promise<void> {
-  const rows = await readSheet(accessToken, "Sales!A2:R");
+  const rows = await readSheet(accessToken, "Sales!A2:S");
   const rowIndex = rows.findIndex((r) => r[0] === id);
   if (rowIndex === -1) throw new Error("Sale not found");
   const existing = rowToSale(rows[rowIndex]);
@@ -436,7 +449,7 @@ export async function updateSale(
     u.id, u.travelDate, u.product, u.detail, u.checkIn, u.checkOut,
     u.status, u.paymentStatus, String(u.amount), u.currency,
     u.clientName, u.clientEmail, u.clientPhone, u.partner,
-    String(u.commission), u.notes, u.createdAt, u.saleDate || "",
+    String(u.commission), u.notes, u.createdAt, u.saleDate || "", u.tripNumber || "",
   ]);
 }
 
@@ -455,12 +468,31 @@ export async function bulkCreateSales(
 ): Promise<number> {
   const sheets = getSheets(accessToken);
   const now = new Date().toISOString();
-  const values = sales.map((s) => [
-    generateId(), s.travelDate, s.product, s.detail, s.checkIn, s.checkOut,
-    s.status, s.paymentStatus, String(s.amount), s.currency,
-    s.clientName, s.clientEmail, s.clientPhone, s.partner,
-    String(s.commission), s.notes, now, s.saleDate || "",
-  ]);
+
+  const existingSales = await getSales(accessToken);
+  const monthCounters: Record<string, number> = {};
+  for (const s of existingSales) {
+    const m = (s.checkIn || s.travelDate || "").slice(0, 7);
+    if (m) {
+      const n = parseInt(s.tripNumber || "0", 10);
+      if (!monthCounters[m] || n > monthCounters[m]) monthCounters[m] = n;
+    }
+  }
+
+  const values = sales.map((s) => {
+    const m = (s.checkIn || s.travelDate || "").slice(0, 7);
+    let tripNumber = "";
+    if (m) {
+      monthCounters[m] = (monthCounters[m] || 0) + 1;
+      tripNumber = String(monthCounters[m]).padStart(2, "0");
+    }
+    return [
+      generateId(), s.travelDate, s.product, s.detail, s.checkIn, s.checkOut,
+      s.status, s.paymentStatus, String(s.amount), s.currency,
+      s.clientName, s.clientEmail, s.clientPhone, s.partner,
+      String(s.commission), s.notes, now, s.saleDate || "", tripNumber,
+    ];
+  });
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
     range: "Sales!A1",
@@ -697,7 +729,7 @@ export async function deleteBankTransaction(accessToken: string, id: string): Pr
 }
 
 // ─── Invoices ──────────────────────────────────────────────────────────────
-// Columns A:N = id, direction, month, number, provider, fileName, driveFileId, driveUrl, amount, currency, date, description, notes, createdAt
+// Columns A:O = id, direction, month, number, provider, fileName, driveFileId, driveUrl, amount, currency, date, description, notes, createdAt, exenta
 
 function rowToInvoice(row: string[]): Invoice {
   return {
@@ -715,12 +747,13 @@ function rowToInvoice(row: string[]): Invoice {
     description: row[11] || "",
     notes: row[12] || "",
     createdAt: row[13] || "",
+    exenta: row[14] === "true",
   };
 }
 
 export async function getInvoices(accessToken: string): Promise<Invoice[]> {
   try {
-    const rows = await readSheet(accessToken, "Facturas!A2:N");
+    const rows = await readSheet(accessToken, "Facturas!A2:O");
     return rows.filter((r) => r[0]).map(rowToInvoice);
   } catch {
     return [];
@@ -737,7 +770,7 @@ export async function createInvoice(
     id, data.direction, data.month, data.number, data.provider,
     data.fileName, data.driveFileId, data.driveUrl,
     String(data.amount), data.currency, data.date,
-    data.description, data.notes, now,
+    data.description, data.notes, now, data.exenta ? "true" : "false",
   ];
   await appendRow(accessToken, "Facturas", row);
   return { ...data, id, createdAt: now };
@@ -776,7 +809,7 @@ export async function initSpreadsheet(accessToken: string): Promise<void> {
     { title: "KPIs", headers: ["id","weekStart","bni11s","presenciales","instaPosts","mailings","whatsappMsgs","cotizaciones","cierres","createdAt"] },
     { title: "MktMetrics", headers: ["id","month","webSessions","webInquiries","rrssFollowers","rrssReach","rrssEngagements","wspConversations","wspNewContacts","emailSent","emailOpens","emailClicks","otrosNotes","createdAt"] },
     { title: "BankTx", headers: ["id","date","description","docNumber","debit","credit","balance","matchedId","matchedType","matchedLabel","status","importedAt"] },
-    { title: "Facturas", headers: ["id","direction","month","number","provider","fileName","driveFileId","driveUrl","amount","currency","date","description","notes","createdAt"] },
+    { title: "Facturas", headers: ["id","direction","month","number","provider","fileName","driveFileId","driveUrl","amount","currency","date","description","notes","createdAt","exenta"] },
   ];
 
   const addRequests = requiredSheets

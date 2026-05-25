@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import {
   LayoutDashboard, Users, Kanban, FileText, Megaphone,
-  TrendingUp, LogOut, Receipt, GitCompare, SendHorizonal, FileBadge, BarChart2,
+  TrendingUp, LogOut, Receipt, GitCompare, SendHorizonal, FileBadge, BarChart2, CalendarDays, Calculator,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,8 +21,10 @@ const navMain: NavItem[] = [
 ];
 
 const navOps: NavItem[] = [
-  { href: "/gastos",        label: "Finanzas",     icon: Receipt    },
-  { href: "/conciliacion",  label: "Conciliación", icon: GitCompare },
+  { href: "/calendario",    label: "Calendario",    icon: CalendarDays },
+  { href: "/gastos",        label: "Finanzas",      icon: Receipt      },
+  { href: "/contabilidad",  label: "Contabilidad",  icon: Calculator   },
+  { href: "/conciliacion",  label: "Conciliación",  icon: GitCompare   },
   {
     href: "/marketing", label: "Marketing", icon: Megaphone,
     children: [{ href: "/mailing", label: "Mailing", icon: SendHorizonal }],

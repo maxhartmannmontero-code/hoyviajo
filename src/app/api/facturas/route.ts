@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
   const date = (formData.get("date") as string) || "";
   const description = (formData.get("description") as string) || "";
   const notes = (formData.get("notes") as string) || "";
+  const exenta = formData.get("exenta") === "true";
 
   const buffer = Buffer.from(await file.arrayBuffer());
   const { fileId, webViewLink } = await uploadInvoice(token, file.name, file.type, buffer, direction, month);
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
   const invoice = await createInvoice(token, {
     direction, month, number, provider,
     fileName: file.name, driveFileId: fileId, driveUrl: webViewLink,
-    amount, currency, date, description, notes,
+    amount, currency, date, description, notes, exenta,
   });
 
   return NextResponse.json(invoice, { status: 201 });

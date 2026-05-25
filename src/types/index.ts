@@ -107,6 +107,7 @@ export interface Sale {
   commission: number;
   notes: string;
   createdAt: string;
+  tripNumber?: string;
 }
 
 export type InvoiceDirection = "recibida" | "emitida";
@@ -125,6 +126,7 @@ export interface Invoice {
   date: string;
   description: string;
   notes: string;
+  exenta: boolean;
   createdAt: string;
 }
 
