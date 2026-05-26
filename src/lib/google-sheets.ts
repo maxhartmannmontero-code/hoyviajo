@@ -395,12 +395,13 @@ function rowToSale(row: string[]): Sale {
     notes: row[15] || "",
     createdAt: row[16] || "",
     tripNumber: row[18] || "",
+    provider: row[19] || "",
   };
 }
 
 export async function getSales(accessToken: string): Promise<Sale[]> {
   try {
-    const rows = await readSheet(accessToken, "Sales!A2:S");
+    const rows = await readSheet(accessToken, "Sales!A2:T");
     return rows.filter((r) => r[0]).map(rowToSale);
   } catch {
     return [];
@@ -430,6 +431,7 @@ export async function createSale(
     data.status, data.paymentStatus, String(data.amount), data.currency,
     data.clientName, data.clientEmail, data.clientPhone, data.partner,
     String(data.commission), data.notes, now, data.saleDate || "", tripNumber,
+    data.provider || "",
   ];
   await appendRow(accessToken, "Sales", row);
   return { ...data, id, createdAt: now, tripNumber };
@@ -440,7 +442,7 @@ export async function updateSale(
   id: string,
   data: Partial<Omit<Sale, "createdAt">>
 ): Promise<void> {
-  const rows = await readSheet(accessToken, "Sales!A2:S");
+  const rows = await readSheet(accessToken, "Sales!A2:T");
   const rowIndex = rows.findIndex((r) => r[0] === id);
   if (rowIndex === -1) throw new Error("Sale not found");
   const existing = rowToSale(rows[rowIndex]);
@@ -450,6 +452,7 @@ export async function updateSale(
     u.status, u.paymentStatus, String(u.amount), u.currency,
     u.clientName, u.clientEmail, u.clientPhone, u.partner,
     String(u.commission), u.notes, u.createdAt, u.saleDate || "", u.tripNumber || "",
+    u.provider || "",
   ]);
 }
 
@@ -822,7 +825,7 @@ export async function initSpreadsheet(accessToken: string): Promise<void> {
     { title: "Campaigns", headers: ["id","name","subject","body","status","sentAt","recipientCount","openRate","createdAt"] },
     { title: "Templates", headers: ["id","name","subject","body","tags","createdAt"] },
     { title: "Deals", headers: ["id","contactId","contactName","dealName","amount","currency","stage","probability","closeDate","notes","createdAt","updatedAt"] },
-    { title: "Sales", headers: ["id","travelDate","product","detail","checkIn","checkOut","status","paymentStatus","amount","currency","clientName","clientEmail","clientPhone","partner","commission","notes","createdAt"] },
+    { title: "Sales", headers: ["id","travelDate","product","detail","checkIn","checkOut","status","paymentStatus","amount","currency","clientName","clientEmail","clientPhone","partner","commission","notes","createdAt","saleDate","tripNumber","provider"] },
     { title: "Expenses", headers: ["id","month","category","description","amount","createdAt"] },
     { title: "KPIs", headers: ["id","weekStart","bni11s","presenciales","instaPosts","mailings","whatsappMsgs","cotizaciones","cierres","createdAt"] },
     { title: "MktMetrics", headers: ["id","month","webSessions","webInquiries","rrssFollowers","rrssReach","rrssEngagements","wspConversations","wspNewContacts","emailSent","emailOpens","emailClicks","otrosNotes","createdAt"] },

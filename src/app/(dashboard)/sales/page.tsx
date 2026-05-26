@@ -643,6 +643,8 @@ const EMPTY_SALE = {
   clientEmail: "",
   clientPhone: "",
   partner: "",
+  provider: "",
+  providerOther: "",
   notes: "",
 };
 
@@ -661,6 +663,7 @@ function NewSaleModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
     try {
       const body = {
         ...form,
+        provider: form.provider === "Otro" ? (form.providerOther.trim() || "Otro") : form.provider,
         amount: parseFloat(String(form.amount).replace(/[^0-9.,]/g, "").replace(",", ".")) || 0,
         commission: parseFloat(String(form.commission).replace(/[^0-9.,]/g, "").replace(",", ".")) || 0,
       };
@@ -814,6 +817,36 @@ function NewSaleModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
             </div>
           </div>
 
+          {/* Proveedor */}
+          <div className="border-t border-gray-100 pt-4">
+            <label className="block text-xs font-medium text-gray-600 mb-1">Proveedor</label>
+            <div className="flex gap-2 flex-wrap">
+              {["Hoteldo", "Ratehawk", "Viaclub", "Otro"].map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => set("provider", p)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                    form.provider === p
+                      ? "bg-[#3c93d6] border-[#3c93d6] text-white"
+                      : "border-gray-200 text-gray-500 hover:border-[#3c93d6] hover:text-[#3c93d6]"
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+            {form.provider === "Otro" && (
+              <input
+                type="text"
+                value={form.providerOther}
+                onChange={(e) => set("providerOther", e.target.value)}
+                placeholder="¿Cuál proveedor?"
+                className="mt-2 w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3c93d6]"
+              />
+            )}
+          </div>
+
           {/* Cliente */}
           <div className="border-t border-gray-100 pt-4">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Datos del cliente</p>
@@ -877,6 +910,8 @@ function EditSaleModal({ sale, onClose, onSaved }: { sale: Sale; onClose: () => 
     clientEmail:   sale.clientEmail || "",
     clientPhone:   sale.clientPhone || "",
     partner:       sale.partner || "",
+    provider:      ["Hoteldo","Ratehawk","Viaclub"].includes(sale.provider || "") ? sale.provider : (sale.provider ? "Otro" : ""),
+    providerOther: ["Hoteldo","Ratehawk","Viaclub"].includes(sale.provider || "") ? "" : (sale.provider || ""),
     notes:         sale.notes || "",
   });
   const [saving, setSaving] = useState(false);
@@ -894,6 +929,7 @@ function EditSaleModal({ sale, onClose, onSaved }: { sale: Sale; onClose: () => 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          provider:   form.provider === "Otro" ? (form.providerOther.trim() || "Otro") : form.provider,
           amount:     parseFloat(String(form.amount).replace(/[^0-9.,]/g, "").replace(",", ".")) || 0,
           commission: parseFloat(String(form.commission).replace(/[^0-9.,]/g, "").replace(",", ".")) || 0,
         }),
@@ -979,7 +1015,27 @@ function EditSaleModal({ sale, onClose, onSaved }: { sale: Sale; onClose: () => 
           </div>
           <div className="grid grid-cols-2 gap-3">
             {field("Email", "clientEmail", "email")}
-            {field("Partner / Proveedor", "partner")}
+            {field("Partner / Agencia", "partner")}
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Proveedor</label>
+            <div className="flex gap-2 flex-wrap">
+              {["Hoteldo", "Ratehawk", "Viaclub", "Otro"].map((p) => (
+                <button key={p} type="button" onClick={() => set("provider", p)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                    form.provider === p
+                      ? "bg-[#3c93d6] border-[#3c93d6] text-white"
+                      : "border-gray-200 text-gray-500 hover:border-[#3c93d6] hover:text-[#3c93d6]"
+                  }`}>
+                  {p}
+                </button>
+              ))}
+            </div>
+            {form.provider === "Otro" && (
+              <input type="text" value={form.providerOther} onChange={(e) => set("providerOther", e.target.value)}
+                placeholder="¿Cuál proveedor?"
+                className="mt-2 w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3c93d6]" />
+            )}
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Notas</label>

@@ -104,6 +104,7 @@ export interface Sale {
   clientEmail: string;
   clientPhone: string;
   partner: string;
+  provider?: string;
   commission: number;
   notes: string;
   createdAt: string;
