@@ -396,12 +396,14 @@ function rowToSale(row: string[]): Sale {
     createdAt: row[16] || "",
     tripNumber: row[18] || "",
     provider: row[19] || "",
+    commissionStatus: (row[20] as import("@/types").CommissionStatus) || undefined,
+    reservationId: row[21] || "",
   };
 }
 
 export async function getSales(accessToken: string): Promise<Sale[]> {
   try {
-    const rows = await readSheet(accessToken, "Sales!A2:T");
+    const rows = await readSheet(accessToken, "Sales!A2:V");
     return rows.filter((r) => r[0]).map(rowToSale);
   } catch {
     return [];
@@ -431,7 +433,7 @@ export async function createSale(
     data.status, data.paymentStatus, String(data.amount), data.currency,
     data.clientName, data.clientEmail, data.clientPhone, data.partner,
     String(data.commission), data.notes, now, data.saleDate || "", tripNumber,
-    data.provider || "",
+    data.provider || "", data.commissionStatus || "", data.reservationId || "",
   ];
   await appendRow(accessToken, "Sales", row);
   return { ...data, id, createdAt: now, tripNumber };
@@ -442,7 +444,7 @@ export async function updateSale(
   id: string,
   data: Partial<Omit<Sale, "createdAt">>
 ): Promise<void> {
-  const rows = await readSheet(accessToken, "Sales!A2:T");
+  const rows = await readSheet(accessToken, "Sales!A2:V");
   const rowIndex = rows.findIndex((r) => r[0] === id);
   if (rowIndex === -1) throw new Error("Sale not found");
   const existing = rowToSale(rows[rowIndex]);
@@ -452,7 +454,7 @@ export async function updateSale(
     u.status, u.paymentStatus, String(u.amount), u.currency,
     u.clientName, u.clientEmail, u.clientPhone, u.partner,
     String(u.commission), u.notes, u.createdAt, u.saleDate || "", u.tripNumber || "",
-    u.provider || "",
+    u.provider || "", u.commissionStatus || "", u.reservationId || "",
   ]);
 }
 

@@ -88,6 +88,8 @@ export interface Deal {
   updatedAt: string;
 }
 
+export type CommissionStatus = "pendiente" | "facturada" | "cobrada";
+
 export interface Sale {
   id: string;
   saleDate: string;
@@ -109,6 +111,8 @@ export interface Sale {
   notes: string;
   createdAt: string;
   tripNumber?: string;
+  commissionStatus?: CommissionStatus;
+  reservationId?: string;
 }
 
 export type InvoiceDirection = "recibida" | "emitida";

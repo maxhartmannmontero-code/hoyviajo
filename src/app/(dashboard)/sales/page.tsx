@@ -9,7 +9,7 @@ import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, ReferenceLine, Cell,
 } from "recharts";
-import { Sale } from "@/types";
+import { Sale, CommissionStatus } from "@/types";
 import { formatCurrency } from "@/lib/utils";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -622,6 +622,95 @@ function ProjectionsPanel({ sales, currency }: { sales: Sale[]; currency: string
   );
 }
 
+// ─── Commission Status Helpers ──────────────────────────────────────────────
+
+function commissionBadge(status: CommissionStatus | undefined) {
+  if (!status) return null;
+  const cfg: Record<CommissionStatus, { label: string; cls: string }> = {
+    pendiente: { label: "Pendiente", cls: "bg-amber-100 text-amber-700" },
+    facturada: { label: "Facturada", cls: "bg-blue-100 text-blue-700" },
+    cobrada:   { label: "Cobrada",   cls: "bg-green-100 text-green-700" },
+  };
+  const { label, cls } = cfg[status];
+  return <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${cls}`}>{label}</span>;
+}
+
+function providerBadge(provider: string | undefined) {
+  if (!provider) return null;
+  const colors: Record<string, string> = {
+    Hoteldo:  "bg-violet-100 text-violet-700",
+    Ratehawk: "bg-orange-100 text-orange-700",
+    Viaclub:  "bg-teal-100 text-teal-700",
+  };
+  const cls = colors[provider] || "bg-gray-100 text-gray-500";
+  return <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${cls}`}>{provider}</span>;
+}
+
+// ─── Commission Panel ───────────────────────────────────────────────────────
+
+function CommissionPanel({ sales, currency }: { sales: Sale[]; currency: string }) {
+  const relevant = sales.filter((s) => s.commissionStatus);
+  if (relevant.length === 0) return null;
+
+  const fmt = (v: number) => formatCurrency(v, currency);
+
+  const byStatus = (st: CommissionStatus) => relevant.filter((s) => s.commissionStatus === st);
+
+  const statuses: { key: CommissionStatus; label: string; bg: string; text: string; border: string }[] = [
+    { key: "cobrada",   label: "Cobradas",   bg: "bg-green-50",  text: "text-green-700",  border: "border-green-100" },
+    { key: "facturada", label: "Facturadas", bg: "bg-blue-50",   text: "text-blue-700",   border: "border-blue-100"  },
+    { key: "pendiente", label: "Pendientes", bg: "bg-amber-50",  text: "text-amber-700",  border: "border-amber-100" },
+  ];
+
+  const totalPending = byStatus("pendiente").reduce((s, v) => s + v.commission, 0);
+  const totalFacturada = byStatus("facturada").reduce((s, v) => s + v.commission, 0);
+  const totalCobrada = byStatus("cobrada").reduce((s, v) => s + v.commission, 0);
+  const grandTotal = totalPending + totalFacturada + totalCobrada;
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-semibold text-gray-900">Estado de cobro de comisiones</h2>
+        <span className="text-xs text-gray-400">
+          Total: <span className="font-semibold text-gray-700">{fmt(grandTotal)}</span>
+        </span>
+      </div>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 mb-4">
+        {statuses.map(({ key, label, bg, text, border }) => {
+          const items = byStatus(key);
+          const total = items.reduce((s, v) => s + v.commission, 0);
+          const pct = grandTotal > 0 ? (total / grandTotal) * 100 : 0;
+          return (
+            <div key={key} className={`${bg} border ${border} rounded-xl p-4`}>
+              <p className={`text-xs font-semibold ${text} uppercase tracking-wide mb-2`}>{label}</p>
+              <p className={`text-xl font-bold ${text}`}>{fmt(total)}</p>
+              <p className="text-xs text-gray-500 mt-1">{items.length} venta{items.length !== 1 ? "s" : ""} · {pct.toFixed(0)}%</p>
+              {key === "pendiente" && items.length > 0 && (
+                <ul className="mt-2 space-y-0.5">
+                  {items.map((s) => (
+                    <li key={s.id} className="flex justify-between text-xs text-amber-600">
+                      <span className="truncate max-w-[120px]">{s.reservationId || s.clientName || s.product}</span>
+                      <span className="font-medium shrink-0 ml-2">{fmt(s.commission)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {/* Progress bar */}
+      {grandTotal > 0 && (
+        <div className="flex rounded-full overflow-hidden h-2 gap-0.5">
+          <div className="bg-green-400 transition-all" style={{ width: `${(totalCobrada / grandTotal) * 100}%` }} />
+          <div className="bg-blue-400 transition-all" style={{ width: `${(totalFacturada / grandTotal) * 100}%` }} />
+          <div className="bg-amber-400 transition-all flex-1" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── New Sale Modal ──────────────────────────────────────────────────────────
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -645,6 +734,8 @@ const EMPTY_SALE = {
   partner: "",
   provider: "",
   providerOther: "",
+  commissionStatus: "" as CommissionStatus | "",
+  reservationId: "",
   notes: "",
 };
 
@@ -664,6 +755,7 @@ function NewSaleModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
       const body = {
         ...form,
         provider: form.provider === "Otro" ? (form.providerOther.trim() || "Otro") : form.provider,
+        commissionStatus: form.commissionStatus || undefined,
         amount: parseFloat(String(form.amount).replace(/[^0-9.,]/g, "").replace(",", ".")) || 0,
         commission: parseFloat(String(form.commission).replace(/[^0-9.,]/g, "").replace(",", ".")) || 0,
       };
@@ -847,6 +939,40 @@ function NewSaleModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
             )}
           </div>
 
+          {/* Estado de cobro (visible solo si hay proveedor seleccionado) */}
+          {form.provider && form.provider !== "Otro" && (
+            <div className="border-t border-gray-100 pt-4">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Estado de cobro</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Estado comisión</label>
+                  <select
+                    value={form.commissionStatus}
+                    onChange={(e) => set("commissionStatus", e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3c93d6]"
+                  >
+                    <option value="">— Sin definir —</option>
+                    <option value="pendiente">Pendiente</option>
+                    <option value="facturada">Facturada</option>
+                    <option value="cobrada">Cobrada</option>
+                  </select>
+                </div>
+                {form.provider === "Hoteldo" && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">ID Reserva HotelDO</label>
+                    <input
+                      type="text"
+                      value={form.reservationId}
+                      onChange={(e) => set("reservationId", e.target.value)}
+                      placeholder="Ej: 915544345400"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3c93d6]"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Cliente */}
           <div className="border-t border-gray-100 pt-4">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Datos del cliente</p>
@@ -894,25 +1020,27 @@ function NewSaleModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
 
 function EditSaleModal({ sale, onClose, onSaved }: { sale: Sale; onClose: () => void; onSaved: () => void }) {
   const [form, setForm] = useState({
-    id:            sale.id || "",
-    saleDate:      sale.saleDate || "",
-    travelDate:    sale.travelDate || "",
-    product:       sale.product || "",
-    detail:        sale.detail || "",
-    checkIn:       sale.checkIn || "",
-    checkOut:      sale.checkOut || "",
-    status:        sale.status || "Emitida",
-    paymentStatus: sale.paymentStatus || "",
-    amount:        String(sale.amount || ""),
-    currency:      sale.currency || "CLP",
-    commission:    String(sale.commission || ""),
-    clientName:    sale.clientName || "",
-    clientEmail:   sale.clientEmail || "",
-    clientPhone:   sale.clientPhone || "",
-    partner:       sale.partner || "",
-    provider:      ["Hoteldo","Ratehawk","Viaclub"].includes(sale.provider || "") ? sale.provider : (sale.provider ? "Otro" : ""),
-    providerOther: ["Hoteldo","Ratehawk","Viaclub"].includes(sale.provider || "") ? "" : (sale.provider || ""),
-    notes:         sale.notes || "",
+    id:               sale.id || "",
+    saleDate:         sale.saleDate || "",
+    travelDate:       sale.travelDate || "",
+    product:          sale.product || "",
+    detail:           sale.detail || "",
+    checkIn:          sale.checkIn || "",
+    checkOut:         sale.checkOut || "",
+    status:           sale.status || "Emitida",
+    paymentStatus:    sale.paymentStatus || "",
+    amount:           String(sale.amount || ""),
+    currency:         sale.currency || "CLP",
+    commission:       String(sale.commission || ""),
+    clientName:       sale.clientName || "",
+    clientEmail:      sale.clientEmail || "",
+    clientPhone:      sale.clientPhone || "",
+    partner:          sale.partner || "",
+    provider:         ["Hoteldo","Ratehawk","Viaclub"].includes(sale.provider || "") ? sale.provider : (sale.provider ? "Otro" : ""),
+    providerOther:    ["Hoteldo","Ratehawk","Viaclub"].includes(sale.provider || "") ? "" : (sale.provider || ""),
+    commissionStatus: (sale.commissionStatus || "") as CommissionStatus | "",
+    reservationId:    sale.reservationId || "",
+    notes:            sale.notes || "",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -929,9 +1057,10 @@ function EditSaleModal({ sale, onClose, onSaved }: { sale: Sale; onClose: () => 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
-          provider:   form.provider === "Otro" ? (form.providerOther.trim() || "Otro") : form.provider,
-          amount:     parseFloat(String(form.amount).replace(/[^0-9.,]/g, "").replace(",", ".")) || 0,
-          commission: parseFloat(String(form.commission).replace(/[^0-9.,]/g, "").replace(",", ".")) || 0,
+          provider:         form.provider === "Otro" ? (form.providerOther.trim() || "Otro") : form.provider,
+          commissionStatus: form.commissionStatus || undefined,
+          amount:           parseFloat(String(form.amount).replace(/[^0-9.,]/g, "").replace(",", ".")) || 0,
+          commission:       parseFloat(String(form.commission).replace(/[^0-9.,]/g, "").replace(",", ".")) || 0,
         }),
       });
       if (res.ok) { onSaved(); onClose(); }
@@ -1037,6 +1166,28 @@ function EditSaleModal({ sale, onClose, onSaved }: { sale: Sale; onClose: () => 
                 className="mt-2 w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3c93d6]" />
             )}
           </div>
+          {form.provider && form.provider !== "Otro" && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Estado comisión</label>
+                <select value={form.commissionStatus} onChange={(e) => set("commissionStatus", e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3c93d6]">
+                  <option value="">— Sin definir —</option>
+                  <option value="pendiente">Pendiente</option>
+                  <option value="facturada">Facturada</option>
+                  <option value="cobrada">Cobrada</option>
+                </select>
+              </div>
+              {form.provider === "Hoteldo" && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">ID Reserva HotelDO</label>
+                  <input type="text" value={form.reservationId} onChange={(e) => set("reservationId", e.target.value)}
+                    placeholder="Ej: 915544345400"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3c93d6]" />
+                </div>
+              )}
+            </div>
+          )}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Notas</label>
             <textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={2}
@@ -1437,6 +1588,9 @@ export default function SalesPage() {
         <ProjectionsPanel sales={sales} currency={primaryCurrency} />
       )}
 
+      {/* Commission tracking */}
+      <CommissionPanel sales={sales} currency={primaryCurrency} />
+
       {/* Table header toggle + filters */}
       <div className="flex items-center justify-between mb-3">
         <button
@@ -1522,7 +1676,10 @@ export default function SalesPage() {
                     <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{s.saleDate || s.travelDate || "—"}</td>
                     <td className="px-4 py-3 max-w-[200px]">
                       <p className="font-medium text-gray-900 truncate">{s.product || "—"}</p>
-                      {s.detail && <p className="text-xs text-gray-400 truncate">{s.detail}</p>}
+                      <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                        {s.provider && providerBadge(s.provider)}
+                        {s.detail && <p className="text-xs text-gray-400 truncate">{s.detail}</p>}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap font-mono">
                       {s.id || "—"}
@@ -1540,8 +1697,13 @@ export default function SalesPage() {
                     <td className="px-4 py-3 text-sm font-semibold text-gray-900 whitespace-nowrap text-right">
                       {s.amount > 0 ? fmt(s.amount) : "—"}
                     </td>
-                    <td className="px-4 py-3 text-sm font-medium text-[#3c93d6] whitespace-nowrap text-right">
-                      {s.commission > 0 ? fmt(s.commission) : "—"}
+                    <td className="px-4 py-3 text-right">
+                      <p className="text-sm font-medium text-[#3c93d6] whitespace-nowrap">
+                        {s.commission > 0 ? fmt(s.commission) : "—"}
+                      </p>
+                      {s.commissionStatus && (
+                        <div className="mt-0.5 flex justify-end">{commissionBadge(s.commissionStatus)}</div>
+                      )}
                     </td>
                     <td className="px-4 py-3 max-w-[160px]">
                       <p className="text-gray-900 truncate">{s.clientName || "—"}</p>
