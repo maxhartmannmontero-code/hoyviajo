@@ -276,7 +276,7 @@ export default function ContabilidadPage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [uploading, setUploading] = useState<string | null>(null);
-  const [invoiceTab, setInvoiceTab] = useState<InvoiceDirection>("recibida");
+  const [invoiceTab, setInvoiceTab] = useState<InvoiceDirection | "calendario">("recibida");
   const [showFormEmitida, setShowFormEmitida] = useState(false);
   const [formEmitida, setFormEmitida] = useState({ provider: "", number: "", date: "", amount: "", description: "" });
   const [savingEmitida, setSavingEmitida] = useState(false);
@@ -639,25 +639,29 @@ export default function ContabilidadPage() {
             <p className="text-[12px] text-gray-400 mt-0.5">
               {invoiceTab === "recibida"
                 ? `Crédito fiscal IVA · recibidas de ${getMonthLabel(selectedMonth)}`
-                : "Facturas emitidas · todos los meses"}
+                : invoiceTab === "emitida"
+                ? "Facturas emitidas · todos los meses"
+                : "Ciclos de facturación y pago por proveedor"}
             </p>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex gap-0.5 bg-gray-100 rounded-xl p-1">
-              {(["recibida", "emitida"] as InvoiceDirection[]).map((t) => (
+              {(["recibida", "emitida", "calendario"] as const).map((t) => (
                 <button key={t} onClick={() => setInvoiceTab(t)}
                   className={`px-4 py-1.5 rounded-lg text-[12px] font-semibold transition-colors ${
                     invoiceTab === t ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
                   }`}>
-                  {t === "recibida" ? "Recibidas" : "Emitidas"}
+                  {t === "recibida" ? "Recibidas" : t === "emitida" ? "Emitidas" : "Calendario"}
                 </button>
               ))}
             </div>
-            <button
-              onClick={() => invoiceTab === "recibida" ? setShowForm(!showForm) : setShowFormEmitida(!showFormEmitida)}
-              className="flex items-center gap-2 bg-gray-900 text-white text-[13px] font-semibold px-4 py-2 rounded-xl hover:bg-gray-700 transition-colors">
-              <Plus size={15} /> {invoiceTab === "recibida" ? "Agregar recibida" : "Agregar emitida"}
-            </button>
+            {invoiceTab !== "calendario" && (
+              <button
+                onClick={() => invoiceTab === "recibida" ? setShowForm(!showForm) : setShowFormEmitida(!showFormEmitida)}
+                className="flex items-center gap-2 bg-gray-900 text-white text-[13px] font-semibold px-4 py-2 rounded-xl hover:bg-gray-700 transition-colors">
+                <Plus size={15} /> {invoiceTab === "recibida" ? "Agregar recibida" : "Agregar emitida"}
+              </button>
+            )}
           </div>
         </div>
 
@@ -987,6 +991,107 @@ export default function ContabilidadPage() {
               </div>
             ) : null}
           </>
+        )}
+
+        {invoiceTab === "calendario" && (
+          <div className="space-y-6">
+
+            {/* HotelDO */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center">
+                  <span className="text-orange-500 font-black text-[11px]">HD</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900">HotelDO</h3>
+                  <p className="text-[12px] text-gray-400">Ciclo quincenal · pago vía Despegar</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                {[
+                  { label: "Estado de cuenta", color: "bg-blue-100 border-blue-200 text-blue-700", desc: "Lun–Mié: verificar comisiones en portal" },
+                  { label: "Carga de factura", color: "bg-amber-100 border-amber-200 text-amber-700", desc: "Subir factura emitida al portal HotelDO" },
+                  { label: "Pago", color: "bg-pink-100 border-pink-200 text-pink-700", desc: "Jueves: Despegar transfiere las comisiones" },
+                ].map((item) => (
+                  <div key={item.label} className={`rounded-xl border px-4 py-3 ${item.color}`}>
+                    <p className="text-[11px] font-bold uppercase tracking-wide mb-1">{item.label}</p>
+                    <p className="text-[12px]">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-3">Próximos pagos 2026</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { mes: "Jun", fechas: ["4 jun — subir factura", "11 jun — cobro $402.000", "18 jun — subir factura", "25 jun — cobro ~$643.000"] },
+                  { mes: "Jul", fechas: ["9 jul — pago", "30 jul — pago"] },
+                  { mes: "Ago", fechas: ["13 ago — pago", "27 ago — pago"] },
+                  { mes: "Sep", fechas: ["24 sep — pago"] },
+                ].map(({ mes, fechas }) => (
+                  <div key={mes} className="bg-gray-50 rounded-xl p-3">
+                    <p className="text-[11px] font-bold text-gray-500 uppercase mb-2">{mes}</p>
+                    {fechas.map((f) => (
+                      <p key={f} className="text-[12px] text-gray-700 mb-1">{f}</p>
+                    ))}
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-4 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+                <p className="text-[12px] text-amber-700">
+                  <span className="font-bold">Pendiente cobrar:</span> INV2418113 ($402.000, período 4–17 may) + nueva factura mayo 18–31 (~$643.000). Subir INV2418113 el <span className="font-bold">4 de junio</span>.
+                </p>
+              </div>
+            </div>
+
+            {/* Viaclub */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-8 h-8 rounded-xl bg-teal-50 flex items-center justify-center">
+                  <span className="text-teal-500 font-black text-[11px]">VC</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900">Viaclub</h3>
+                  <p className="text-[12px] text-gray-400">Ciclo semanal · factura miércoles, pago jueves</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div className="bg-teal-50 border border-teal-100 rounded-xl px-4 py-3">
+                  <p className="text-[11px] font-bold text-teal-700 uppercase tracking-wide mb-1">Facturación</p>
+                  <p className="text-[13px] text-teal-800 font-semibold">Todos los miércoles</p>
+                </div>
+                <div className="bg-green-50 border border-green-100 rounded-xl px-4 py-3">
+                  <p className="text-[11px] font-bold text-green-700 uppercase tracking-wide mb-1">Pago</p>
+                  <p className="text-[13px] text-green-800 font-semibold">Todos los jueves</p>
+                </div>
+              </div>
+
+              <div className="bg-teal-50 border border-teal-100 rounded-xl px-4 py-3">
+                <p className="text-[12px] text-teal-700">
+                  <span className="font-bold">Pendiente:</span> Hotel Holiday Inn Asunción — $162.000 · facturar <span className="font-bold">miércoles 28 mayo</span>, cobro <span className="font-bold">jueves 29 mayo</span>.
+                </p>
+              </div>
+            </div>
+
+            {/* Ratehawk */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center">
+                  <span className="text-orange-600 font-black text-[11px]">RH</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900">Ratehawk</h3>
+                  <p className="text-[12px] text-gray-400">Paga y cobra en dólares · ciclo a confirmar</p>
+                </div>
+              </div>
+              <div className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3">
+                <p className="text-[12px] text-gray-500">Las comisiones de Ratehawk aparecen como transferencias en USD (~$440–443 USD) en el banco. Ciclo de facturación pendiente de confirmar.</p>
+              </div>
+            </div>
+
+          </div>
         )}
       </section>
     </div>
