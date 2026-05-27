@@ -648,9 +648,47 @@ function providerBadge(provider: string | undefined) {
 
 // ─── Commission Panel ───────────────────────────────────────────────────────
 
-function CommissionPanel({ sales, currency }: { sales: Sale[]; currency: string }) {
+function CommissionPanel({ sales, currency, onRefresh }: { sales: Sale[]; currency: string; onRefresh: () => void }) {
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
+
+  async function handleSync() {
+    setSyncing(true);
+    setSyncResult(null);
+    try {
+      const res = await fetch("/api/sales/set-commission-status", { method: "POST" });
+      const data = await res.json();
+      setSyncResult(`${data.ok} ventas actualizadas${data.error > 0 ? `, ${data.error} errores` : ""}`);
+      onRefresh();
+    } catch {
+      setSyncResult("Error al sincronizar");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   const relevant = sales.filter((s) => s.commissionStatus);
-  if (relevant.length === 0) return null;
+  if (relevant.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold text-gray-900">Estado de cobro de comisiones</h2>
+            <p className="text-sm text-gray-400 mt-1">Aún no hay ventas con estado asignado.</p>
+          </div>
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-60"
+          >
+            <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
+            {syncing ? "Sincronizando..." : "Sincronizar estados"}
+          </button>
+        </div>
+        {syncResult && <p className="text-xs text-green-600 mt-2">{syncResult}</p>}
+      </div>
+    );
+  }
 
   const fmt = (v: number) => formatCurrency(v, currency);
 
@@ -671,9 +709,20 @@ function CommissionPanel({ sales, currency }: { sales: Sale[]; currency: string 
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-semibold text-gray-900">Estado de cobro de comisiones</h2>
-        <span className="text-xs text-gray-400">
-          Total: <span className="font-semibold text-gray-700">{fmt(grandTotal)}</span>
-        </span>
+        <div className="flex items-center gap-3">
+          {syncResult && <span className="text-xs text-green-600">{syncResult}</span>}
+          <span className="text-xs text-gray-400">
+            Total: <span className="font-semibold text-gray-700">{fmt(grandTotal)}</span>
+          </span>
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60"
+          >
+            <RefreshCw size={12} className={syncing ? "animate-spin" : ""} />
+            {syncing ? "Sincronizando..." : "Sincronizar"}
+          </button>
+        </div>
       </div>
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 mb-4">
         {statuses.map(({ key, label, bg, text, border }) => {
@@ -1423,7 +1472,6 @@ export default function SalesPage() {
   const [showImport, setShowImport] = useState(false);
   const [showNewSale, setShowNewSale] = useState(false);
   const [editSale, setEditSale] = useState<Sale | null>(null);
-  const [seeding, setSeeding] = useState(false);
   const [showSalesTable, setShowSalesTable] = useState(true);
   const [masked, setMasked] = useState(false);
   const [syncState, setSyncState] = useState<
@@ -1449,16 +1497,6 @@ export default function SalesPage() {
 
   useEffect(() => { fetchSales(); }, []);
 
-  async function handleSeed() {
-    if (!confirm("Esto borrará todos los datos actuales y cargará las 70 ventas confirmadas. ¿Continuar?")) return;
-    setSeeding(true);
-    try {
-      const res = await fetch("/api/sales/seed", { method: "POST" });
-      if (res.ok) await fetchSales();
-    } finally {
-      setSeeding(false);
-    }
-  }
 
   async function handleSync() {
     setSyncState("loading");
@@ -1529,14 +1567,7 @@ export default function SalesPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleSeed}
-            disabled={seeding}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-[#3c93d6] text-[#3c93d6] text-sm font-medium rounded-xl hover:bg-[#ddeef9] transition-colors disabled:opacity-50"
-          >
-            <RefreshCw size={16} className={seeding ? "animate-spin" : ""} />
-            {seeding ? "Cargando..." : "Cargar datos reales"}
-          </button>
+
           {sales.length > 0 && (
             <button
               onClick={() => setSyncState("preview")}
@@ -1589,7 +1620,7 @@ export default function SalesPage() {
       )}
 
       {/* Commission tracking */}
-      <CommissionPanel sales={sales} currency={primaryCurrency} />
+      <CommissionPanel sales={sales} currency={primaryCurrency} onRefresh={fetchSales} />
 
       {/* Table header toggle + filters */}
       <div className="flex items-center justify-between mb-3">

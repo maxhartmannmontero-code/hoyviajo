@@ -452,6 +452,16 @@ export default function VouchersPage() {
       }
     }
   }
+  // Sequential trip numbers for the displayed month: same client + same checkIn = same trip
+  const tripKey = (v: Voucher) => v.id;
+  const tripNumberMap = new Map<string, string>();
+  for (let d = 1; d <= daysInMonth; d++) {
+    for (const v of (tripsByDay[d] ?? [])) {
+      const k = tripKey(v);
+      if (!tripNumberMap.has(k)) tripNumberMap.set(k, String(tripNumberMap.size + 1).padStart(2, "0"));
+    }
+  }
+
   const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
   const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
@@ -550,9 +560,10 @@ export default function VouchersPage() {
                         <button
                           key={v.id}
                           onClick={() => setDetailVoucher(v)}
-                          title={`${v.contactName}${v.description ? ` · ${v.description}` : ""}`}
+                          title={`#${tripNumberMap.get(tripKey(v))} · ${v.contactName}${v.description ? ` · ${v.description}` : ""}`}
                           className={`w-full flex items-center gap-1 text-[10px] font-medium rounded px-1 py-0.5 truncate leading-tight border cursor-pointer hover:opacity-80 transition-opacity ${cfg.badge}`}
                         >
+                          <span className="flex-shrink-0 font-black text-[9px] opacity-75">{tripNumberMap.get(tripKey(v))}</span>
                           <span className="flex-shrink-0">{cfg.icon}</span>
                           <span className="truncate">{v.contactName.split(" ")[0]}</span>
                         </button>
