@@ -181,6 +181,12 @@ export default function DashboardPage() {
   const marginPct   = monthSalesAmount > 0 ? (netProfit / monthSalesAmount) * 100 : 0;
   const salesChartData = groupSalesByMonth(sales);
 
+  // ── Cobros: desglose de commissionStatus en ventas del mes ──
+  const cobradas   = monthSales.filter(s => s.commissionStatus === "cobrada").reduce((sum, s) => sum + s.commission, 0);
+  const facturadas = monthSales.filter(s => s.commissionStatus === "facturada").reduce((sum, s) => sum + s.commission, 0);
+  const pendientes = monthSales.filter(s => s.commissionStatus === "pendiente" || (!s.commissionStatus && s.commission > 0)).reduce((sum, s) => sum + s.commission, 0);
+  const hasStatus  = monthSales.some(s => s.commissionStatus);
+
   const newThisMonth      = contacts.filter(c => c.createdAt?.startsWith(thisMonth)).length;
   const pendingFollowUps  = activities.filter(a => a.status === "pendiente").length;
   const recentContacts    = [...contacts].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5);
@@ -303,6 +309,59 @@ export default function DashboardPage() {
             </p>
           </div>
         </div>
+
+        {/* ── Estado de cobros del mes ─────────────────────────── */}
+        {monthCommissions > 0 && (
+          <div className="bg-[#FEFCF8] rounded-2xl border border-[#E5DDD2]/70 shadow-[0_1px_3px_rgba(30,37,51,0.04)] p-5 anim-fade-up d-75">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-[10px] font-semibold text-[#9EA9BA] uppercase tracking-[0.14em]">Estado de cobros · {monthLabel}</p>
+                <p className="text-[1.3rem] font-bold text-[#1E2533] tabular-nums leading-tight mt-0.5">
+                  {hide(fmtCLP(monthCommissions))} <span className="text-[13px] font-normal text-[#9EA9BA]">en comisiones</span>
+                </p>
+              </div>
+              {!hasStatus && (
+                <span className="text-[11px] text-[#C89035] bg-amber-50 border border-amber-100 rounded-lg px-3 py-1.5">
+                  Actualiza estado de cobro en Ventas
+                </span>
+              )}
+            </div>
+
+            {hasStatus ? (
+              <>
+                {/* Barra de progreso */}
+                <div className="flex rounded-full overflow-hidden h-2.5 mb-4 gap-0.5">
+                  <div className="bg-[#0B7A6C] transition-all" style={{ width: `${monthCommissions > 0 ? (cobradas / monthCommissions) * 100 : 0}%` }} />
+                  <div className="bg-[#3c93d6] transition-all" style={{ width: `${monthCommissions > 0 ? (facturadas / monthCommissions) * 100 : 0}%` }} />
+                  <div className="bg-[#E5DDD2] flex-1" />
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { label: "Cobradas", value: cobradas, color: "text-[#0B7A6C]", dot: "bg-[#0B7A6C]", pct: monthCommissions > 0 ? (cobradas / monthCommissions) * 100 : 0 },
+                    { label: "Facturadas · pendiente pago", value: facturadas, color: "text-[#3c93d6]", dot: "bg-[#3c93d6]", pct: monthCommissions > 0 ? (facturadas / monthCommissions) * 100 : 0 },
+                    { label: "Sin facturar", value: pendientes, color: "text-[#9EA9BA]", dot: "bg-[#E5DDD2]", pct: monthCommissions > 0 ? (pendientes / monthCommissions) * 100 : 0 },
+                  ].map(({ label, value, color, dot, pct }) => (
+                    <div key={label} className="bg-[#F8F5F0] rounded-xl p-3.5">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <span className={`w-2 h-2 rounded-full ${dot}`} />
+                        <p className="text-[10.5px] text-[#9EA9BA] font-medium">{label}</p>
+                      </div>
+                      <p className={`text-[1.1rem] font-bold tabular-nums ${color}`}>{hide(fmtCLP(value))}</p>
+                      <p className="text-[10.5px] text-[#9EA9BA] mt-0.5">{masked ? "••%" : `${pct.toFixed(0)}% del total`}</p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="bg-[#F8F5F0] rounded-xl p-4 text-center">
+                <p className="text-[12px] text-[#9EA9BA]">
+                  Marca el estado de cada venta como <span className="font-semibold text-[#0B7A6C]">Cobrada</span>, <span className="font-semibold text-[#3c93d6]">Facturada</span> o <span className="font-semibold text-[#C89035]">Pendiente</span> desde la sección Ventas para ver el desglose aquí.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* â"€â"€ META HERO â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */}
         <div
