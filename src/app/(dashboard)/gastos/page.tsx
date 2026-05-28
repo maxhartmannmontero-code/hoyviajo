@@ -7,6 +7,7 @@ import {
 } from "recharts";
 import { Plus, Trash2, X, Check, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Expense, ExpenseCategory, Sale } from "@/types";
+import { useMask } from "@/lib/mask-context";
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
@@ -25,7 +26,7 @@ const PRESET_EXPENSES: { category: ExpenseCategory; description: string; amount:
   { category: "comunicaciones", description: "Celular / internet", amount: 30000  },
 ];
 
-const fmtCLP = (n: number) =>
+const _fmt = (n: number) =>
   new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(n);
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -116,7 +117,7 @@ function AddExpenseModal({
                     </span>
                     <span className="text-gray-700">{p.description}</span>
                   </div>
-                  <span className="font-semibold text-gray-800">{fmtCLP(p.amount)}</span>
+                  <span className="font-semibold text-gray-800">{_fmt(p.amount)}</span>
                 </button>
               ))}
             </div>
@@ -164,6 +165,8 @@ function AddExpenseModal({
 // ─── Custom tooltip ─────────────────────────────────────────────────────────
 
 function CashFlowTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
+  const { masked } = useMask();
+  const fmtCLP = (n: number) => masked ? "•••••" : _fmt(n);
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-3 text-xs">
@@ -181,6 +184,8 @@ function CashFlowTooltip({ active, payload, label }: { active?: boolean; payload
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
 export default function GastosPage() {
+  const { masked } = useMask();
+  const fmtCLP = (n: number) => masked ? "•••••" : _fmt(n);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);

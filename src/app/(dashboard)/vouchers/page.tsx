@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { Upload, FileText, ExternalLink, X, Search, CalendarPlus, CalendarCheck, Loader2, Trash2, Pencil, Folder, FolderOpen, ChevronRight, CalendarDays, List, ChevronLeft, Plane, Hotel, Car, Package, Share2 } from "lucide-react";
 import { Voucher, Contact, VoucherType } from "@/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useMask } from "@/lib/mask-context";
 
 // ─── Type config ─────────────────────────────────────────────────────────────
 
@@ -46,6 +47,8 @@ function TypeSelect({ value, onChange }: { value: VoucherType; onChange: (v: Vou
 // ─── Detail Modal (calendar click) ───────────────────────────────────────────
 
 function DetailModal({ voucher, onClose, onEdit }: { voucher: Voucher; onClose: () => void; onEdit: () => void }) {
+  const { masked } = useMask();
+  const fmtCLP = (n: number) => masked ? "•••••" : formatCurrency(n, voucher.currency);
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
@@ -71,7 +74,7 @@ function DetailModal({ voucher, onClose, onEdit }: { voucher: Voucher; onClose: 
             <p className="text-xs text-gray-500 italic">{voucher.notes}</p>
           )}
           {voucher.amount > 0 && (
-            <p className="text-sm font-semibold text-gray-900">{formatCurrency(voucher.amount, voucher.currency)}</p>
+            <p className="text-sm font-semibold text-gray-900">{fmtCLP(voucher.amount)}</p>
           )}
         </div>
 
@@ -353,6 +356,8 @@ function EditModal({ voucher, onClose, onSave }: { voucher: Voucher; onClose: ()
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function VouchersPage() {
+  const { masked } = useMask();
+  const fmtCLP = (n: number) => masked ? "•••••" : formatCurrency(n);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
@@ -470,7 +475,7 @@ export default function VouchersPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Vouchers</h1>
-          <p className="text-sm text-gray-500 mt-1">{vouchers.length} vouchers · Total: {formatCurrency(totalAmount)}</p>
+          <p className="text-sm text-gray-500 mt-1">{vouchers.length} vouchers · Total: {fmtCLP(totalAmount)}</p>
         </div>
         <button onClick={() => setShowModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700">

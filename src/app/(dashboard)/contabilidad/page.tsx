@@ -8,12 +8,13 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { Sale, Expense, Invoice, InvoiceDirection } from "@/types";
+import { useMask } from "@/lib/mask-context";
 
 const IVA_RATE = 0.19;
 const PPM_RATE = 0.02;
 const RENTA_RATE = 0.25;
 
-const fmtCLP = (n: number) =>
+const _fmt = (n: number) =>
   new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(n);
 
 function getMonthLabel(ym: string) {
@@ -170,6 +171,8 @@ function MonthFolder({ month, invoices, onDelete, onAttach, uploading }: {
   onAttach: (id: string, file: File) => void;
   uploading: string | null;
 }) {
+  const { masked } = useMask();
+  const fmtCLP = (n: number) => masked ? "•••••" : _fmt(n);
   const [open, setOpen] = useState(true);
   const months = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   const [y, m] = month.split("-");
@@ -241,6 +244,8 @@ function TaxCard({
   icon: React.ReactNode; label: string; value: string; sub?: string;
   color?: string; highlight?: boolean;
 }) {
+  const { masked } = useMask();
+  const fmtCLP = (n: number) => masked ? "•••••" : _fmt(n);
   return (
     <div className={`bg-white rounded-2xl p-5 shadow-sm border ${highlight ? "border-orange-200 bg-orange-50" : "border-gray-100"}`}>
       <div className="flex items-center gap-2 mb-3">
@@ -265,6 +270,8 @@ function SectionHeader({ title, sub }: { title: string; sub?: string }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function ContabilidadPage() {
+  const { masked } = useMask();
+  const fmtCLP = (n: number) => masked ? "•••••" : _fmt(n);
   const today = new Date().toISOString().slice(0, 7);
   const [selectedMonth, setSelectedMonth] = useState(today);
   const [sales, setSales] = useState<Sale[]>([]);

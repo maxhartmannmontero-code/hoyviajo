@@ -7,8 +7,9 @@ import {
 } from "recharts";
 import { TrendingUp, TrendingDown, DollarSign, Award, Hash, ShoppingBag, Minus } from "lucide-react";
 import { Sale } from "@/types";
+import { useMask } from "@/lib/mask-context";
 
-const fmtCLP = (n: number) =>
+const _fmt = (n: number) =>
   new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(n);
 
 const fmtPct = (n: number) =>
@@ -86,6 +87,8 @@ interface KpiCardProps {
 }
 
 function KpiCard({ label, value, sub, pct, accent, iconBg, icon }: KpiCardProps) {
+  const { masked } = useMask();
+  const fmtCLP = (n: number) => masked ? "•••••" : _fmt(n);
   return (
     <div className={`bg-white rounded-xl border border-gray-100 border-l-4 ${accent} p-5 shadow-sm flex items-start gap-4`}>
       <div className={`p-2.5 rounded-xl ${iconBg} flex-shrink-0`}>{icon}</div>
@@ -111,6 +114,8 @@ const PRODUCT_COLORS: Record<string, string> = {
 const DEFAULT_COLOR = "#94a3b8";
 
 const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number; name: string; color: string }[]; label?: string }) => {
+  const { masked } = useMask();
+  const fmtCLP = (n: number) => masked ? "•••••" : _fmt(n);
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-white border border-gray-100 rounded-xl shadow-lg p-3 text-sm">
@@ -129,6 +134,8 @@ const PAYMENT_LABELS: Record<string, string> = {
 };
 
 export default function ReportesPage() {
+  const { masked } = useMask();
+  const fmtCLP = (n: number) => masked ? "•••••" : _fmt(n);
   const [month, setMonth] = useState(currentMonth);
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);

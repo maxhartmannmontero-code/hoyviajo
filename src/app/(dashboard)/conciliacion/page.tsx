@@ -7,10 +7,11 @@ import {
   ArrowDownToLine, ArrowUpFromLine,
 } from "lucide-react";
 import type { BankTransaction, BankTxStatus, Sale, Expense, Invoice } from "@/types";
+import { useMask } from "@/lib/mask-context";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
-const fmtCLP = (n: number) =>
+const _fmt = (n: number) =>
   new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(n);
 
 function fmtDate(d: string) {
@@ -284,8 +285,8 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
                       <tr key={i} className="border-t border-gray-50">
                         <td className="py-2 px-3 text-gray-500">{fmtDate(tx.date)}</td>
                         <td className="py-2 px-3 text-gray-700 max-w-[180px] truncate">{tx.description}</td>
-                        <td className="py-2 px-3 text-right text-red-600">{tx.debit > 0 ? fmtCLP(tx.debit) : "—"}</td>
-                        <td className="py-2 px-3 text-right text-green-600">{tx.credit > 0 ? fmtCLP(tx.credit) : "—"}</td>
+                        <td className="py-2 px-3 text-right text-red-600">{tx.debit > 0 ? _fmt(tx.debit) : "—"}</td>
+                        <td className="py-2 px-3 text-right text-green-600">{tx.credit > 0 ? _fmt(tx.credit) : "—"}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -323,6 +324,8 @@ function MatchModal({
   onClose: () => void;
   onSave: () => void;
 }) {
+  const { masked } = useMask();
+  const fmtCLP = (n: number) => masked ? "•••••" : _fmt(n);
   const [tab, setTab] = useState<"invoice" | "sale" | "expense">(tx.credit > 0 ? "invoice" : "expense");
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
@@ -463,6 +466,8 @@ function MatchModal({
 // ─── Main Page ─────────────────────────────────────────────────────────────
 
 export default function ConciliacionPage() {
+  const { masked } = useMask();
+  const fmtCLP = (n: number) => masked ? "•••••" : _fmt(n);
   const [transactions, setTransactions] = useState<BankTransaction[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
