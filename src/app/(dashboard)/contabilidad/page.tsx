@@ -798,6 +798,7 @@ export default function ContabilidadPage() {
                 <table className="w-full text-[13px]">
                   <thead>
                     <tr className="bg-gray-50 text-gray-400 text-[11px] uppercase tracking-wider">
+                      <th className="text-center px-3 py-3 font-semibold w-8">#</th>
                       <th className="text-left px-5 py-3 font-semibold">Proveedor</th>
                       <th className="text-left px-4 py-3 font-semibold">N°</th>
                       <th className="text-left px-4 py-3 font-semibold">Fecha</th>
@@ -813,6 +814,7 @@ export default function ContabilidadPage() {
                       const ivaRow = inv.exenta ? 0 : inv.amount * IVA_RATE / (1 + IVA_RATE);
                       return (
                         <tr key={inv.id} className={`border-t border-gray-50 ${i % 2 === 0 ? "" : "bg-gray-50/40"}`}>
+                          <td className="px-3 py-3 text-center text-[11px] text-gray-300 font-mono">{i + 1}</td>
                           <td className="px-5 py-3 font-medium text-gray-800">{inv.provider}</td>
                           <td className="px-4 py-3 text-gray-500">{inv.number || "—"}</td>
                           <td className="px-4 py-3 text-gray-500">{inv.date || "—"}</td>
@@ -932,6 +934,7 @@ export default function ContabilidadPage() {
                 <table className="w-full text-[13px]">
                   <thead>
                     <tr className="bg-gray-50 text-gray-400 text-[11px] uppercase tracking-wider">
+                      <th className="text-center px-3 py-3 font-semibold w-8">#</th>
                       <th className="text-left px-5 py-3 font-semibold">Cliente</th>
                       <th className="text-left px-4 py-3 font-semibold">N°</th>
                       <th className="text-left px-4 py-3 font-semibold">Fecha</th>
@@ -946,6 +949,7 @@ export default function ContabilidadPage() {
                       const ivaRow = inv.amount * IVA_RATE / (1 + IVA_RATE);
                       return (
                         <tr key={inv.id} className={`border-t border-gray-50 ${i % 2 === 0 ? "" : "bg-gray-50/40"}`}>
+                          <td className="px-3 py-3 text-center text-[11px] text-gray-300 font-mono">{i + 1}</td>
                           <td className="px-5 py-3 font-medium text-gray-800">{inv.provider}</td>
                           <td className="px-4 py-3 text-gray-500">{inv.number || "—"}</td>
                           <td className="px-4 py-3 text-gray-500">{inv.date || "—"}</td>
