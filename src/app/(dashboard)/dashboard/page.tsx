@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { Contact, Activity, Deal, Sale, Expense, Voucher, WeeklyKPI } from "@/types";
 import { formatCurrency, CONTACT_STATUS_COLORS, CONTACT_STATUS_LABELS } from "@/lib/utils";
+import { useMask } from "@/lib/mask-context";
 
 const META = 4_000_000;
 
@@ -98,7 +99,7 @@ export default function DashboardPage() {
   const [kpis, setKpis]           = useState<WeeklyKPI[]>([]);
   const [loading, setLoading]     = useState(true);
   const [gaData, setGaData]       = useState<{ sessions: number; users: number } | null>(null);
-  const [masked, setMasked]       = useState(false);
+  const { masked } = useMask();
 
   const hide = (v: string) => (masked ? "•••••" : v);
 
@@ -245,18 +246,6 @@ export default function DashboardPage() {
               Resumen general · Hoy Viajo CRM
             </p>
           </div>
-          <button
-            onClick={() => setMasked(v => !v)}
-            className={[
-              "mt-2 flex items-center gap-2 px-3.5 py-2 rounded-xl border text-[12.5px] font-medium transition-all duration-200",
-              masked
-                ? "bg-[#1E2533]/[0.06] border-[#1E2533]/15 text-[#1E2533]/60"
-                : "border-[#E5DDD2] text-[#9EA9BA] hover:text-[#1E2533]/60 hover:border-[#C8C0B6] bg-[#FEFCF8]",
-            ].join(" ")}
-          >
-            {masked ? <EyeOff size={14} /> : <Eye size={14} />}
-            {masked ? "Mostrar" : "Ocultar"}
-          </button>
         </div>
 
         {/* ── Margen de utilidad ────────────────────────────────── */}

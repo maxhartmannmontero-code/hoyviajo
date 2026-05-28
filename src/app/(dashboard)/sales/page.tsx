@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { Sale, CommissionStatus } from "@/types";
 import { formatCurrency } from "@/lib/utils";
+import { useMask } from "@/lib/mask-context";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -191,9 +192,10 @@ function mapRows(
 const TICK_FMT = (v: number) =>
   v >= 1_000_000 ? `${(v / 1_000_000).toFixed(0)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v);
 
-function AnalyticsPanel({ sales, currency, masked, onToggleMask }: {
-  sales: Sale[]; currency: string; masked: boolean; onToggleMask: () => void;
+function AnalyticsPanel({ sales, currency }: {
+  sales: Sale[]; currency: string;
 }) {
+  const { masked, toggleMask } = useMask();
   const [showTable, setShowTable] = useState(false);
   const allData = groupByMonth(sales);
   const data = allData.filter((m) => m.key !== "sin-fecha");
@@ -241,7 +243,7 @@ function AnalyticsPanel({ sales, currency, masked, onToggleMask }: {
             Promedio: <span className="font-semibold text-gray-600">{hide(avg)}</span>
           </span>
           <button
-            onClick={onToggleMask}
+            onClick={toggleMask}
             title={masked ? "Mostrar valores" : "Ocultar valores"}
             className={`p-1.5 rounded-lg transition-colors ${masked ? "bg-gray-200 text-gray-500" : "hover:bg-gray-100 text-gray-300 hover:text-gray-500"}`}
           >
@@ -1473,7 +1475,7 @@ export default function SalesPage() {
   const [showNewSale, setShowNewSale] = useState(false);
   const [editSale, setEditSale] = useState<Sale | null>(null);
   const [showSalesTable, setShowSalesTable] = useState(true);
-  const [masked, setMasked] = useState(false);
+  const { masked } = useMask();
   const [syncState, setSyncState] = useState<
     "idle" | "loading" | "preview" | "done"
   >("idle");
@@ -1611,7 +1613,7 @@ export default function SalesPage() {
 
       {/* Analytics */}
       {sales.length > 0 && (
-        <AnalyticsPanel sales={sales} currency={primaryCurrency} masked={masked} onToggleMask={() => setMasked(v => !v)} />
+        <AnalyticsPanel sales={sales} currency={primaryCurrency} />
       )}
 
       {/* Projections */}

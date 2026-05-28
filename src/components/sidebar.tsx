@@ -5,9 +5,10 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import {
   LayoutDashboard, Users, Kanban, FileText, Megaphone,
-  TrendingUp, LogOut, Receipt, GitCompare, SendHorizonal, BarChart2, Calculator,
+  TrendingUp, LogOut, Receipt, GitCompare, SendHorizonal, BarChart2, Calculator, Eye, EyeOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useMask } from "@/lib/mask-context";
 
 type NavChild = { href: string; label: string; icon: React.ElementType };
 type NavItem  = { href: string; label: string; icon: React.ElementType; children?: NavChild[] };
@@ -98,6 +99,7 @@ function NavGroup({ items, pathname }: { items: NavItem[]; pathname: string }) {
 export function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const { masked, toggleMask } = useMask();
   const initials = session?.user?.name?.split(" ").map(w => w[0]).slice(0, 2).join("") ?? "U";
 
   return (
@@ -175,6 +177,18 @@ export function Sidebar() {
               </div>
             </div>
           )}
+          <button
+            onClick={toggleMask}
+            className={cn(
+              "flex items-center gap-2.5 w-full px-3 py-2 text-[12px] font-medium rounded-xl transition-all duration-200 mb-1",
+              masked
+                ? "bg-amber-500/20 text-amber-300 hover:bg-amber-500/30"
+                : "text-white/30 hover:text-white/65 hover:bg-white/[0.05]"
+            )}
+          >
+            {masked ? <EyeOff size={13} /> : <Eye size={13} />}
+            {masked ? "Mostrar datos" : "Ocultar datos"}
+          </button>
           <button
             onClick={() => signOut({ callbackUrl: "/auth/signin" })}
             className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] font-medium text-white/30 hover:text-white/65 hover:bg-white/[0.05] rounded-xl transition-all duration-200"
