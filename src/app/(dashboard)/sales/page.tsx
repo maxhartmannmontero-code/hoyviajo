@@ -400,10 +400,12 @@ function AnalyticsPanel({ sales, currency }: {
 // ─── Projections Panel ──────────────────────────────────────────────────────
 
 function ProjectionsPanel({ sales, currency }: { sales: Sale[]; currency: string }) {
+  const { masked } = useMask();
   const data = groupByMonth(sales).filter((m) => m.key !== "sin-fecha");
   if (data.length < 2) return null;
 
-  const fmt = (v: number) => formatCurrency(v, currency);
+  const fmt  = (v: number) => masked ? "•••••" : formatCurrency(v, currency);
+  const mpct = (v: string) => masked ? "••%" : v;
 
   // 2025: abr–dic (lo que tenemos)
   const m2025 = data.filter((m) => m.key.startsWith("2025"));
@@ -481,7 +483,7 @@ function ProjectionsPanel({ sales, currency }: { sales: Sale[]; currency: string
             </div>
             <div className="flex justify-between items-baseline">
               <span className="text-xs text-gray-500">% comisión</span>
-              <span className="text-gray-500">{sum2025 > 0 ? ((com2025 / sum2025) * 100).toFixed(1) : "—"}%</span>
+              <span className="text-gray-500">{mpct(sum2025 > 0 ? `${((com2025 / sum2025) * 100).toFixed(1)}%` : "—")}</span>
             </div>
           </div>
         </div>
@@ -506,7 +508,7 @@ function ProjectionsPanel({ sales, currency }: { sales: Sale[]; currency: string
             </div>
             <div className="flex justify-between items-baseline">
               <span className="text-xs text-gray-500">% comisión</span>
-              <span className="text-gray-500">{sum2026 > 0 ? ((com2026 / sum2026) * 100).toFixed(1) : "—"}%</span>
+              <span className="text-gray-500">{mpct(sum2026 > 0 ? `${((com2026 / sum2026) * 100).toFixed(1)}%` : "—")}</span>
             </div>
           </div>
         </div>
@@ -528,7 +530,7 @@ function ProjectionsPanel({ sales, currency }: { sales: Sale[]; currency: string
             <div className="flex justify-between items-baseline pt-1 border-t border-green-100">
               <span className="text-xs text-gray-500">vs prom mensual 2025</span>
               <span className={`font-bold text-sm ${yoyUp ? "text-green-600" : "text-red-500"}`}>
-                {yoyUp ? "+" : ""}{yoy.toFixed(1)}%
+                {mpct(`${yoyUp ? "+" : ""}${yoy.toFixed(1)}%`)}
               </span>
             </div>
           </div>
@@ -553,14 +555,14 @@ function ProjectionsPanel({ sales, currency }: { sales: Sale[]; currency: string
         <div className="mb-4">
           <div className="flex justify-between text-xs text-gray-500 mb-1.5">
             <span>2026 acumulado: <strong className="text-gray-800">{fmt(sum2026)}</strong></span>
-            <span className="font-semibold text-[#3c93d6]">{progressPct.toFixed(1)}%</span>
+            <span className="font-semibold text-[#3c93d6]">{mpct(`${progressPct.toFixed(1)}%`)}</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-5 overflow-hidden relative">
             <div
               className="h-5 rounded-full bg-gradient-to-r from-[#3c93d6] to-[#22c55e] transition-all flex items-center justify-end pr-2"
               style={{ width: `${progressPct}%` }}
             >
-              {progressPct > 15 && (
+              {progressPct > 15 && !masked && (
                 <span className="text-[10px] font-bold text-white">{progressPct.toFixed(0)}%</span>
               )}
             </div>
@@ -592,7 +594,7 @@ function ProjectionsPanel({ sales, currency }: { sales: Sale[]; currency: string
                 Brecha a cerrar
               </p>
               <p className={`text-lg font-bold ${gapPct <= 20 ? "text-amber-700" : "text-red-700"}`}>
-                +{gapPct.toFixed(0)}% / mes
+                {mpct(`+${gapPct.toFixed(0)}% / mes`)}
               </p>
               <p className={`text-[10px] ${gapPct <= 20 ? "text-amber-500" : "text-red-400"}`}>
                 {gapPct <= 20 ? "¡Está al alcance!" : fmt(gapPerMonth) + " más/mes"}
@@ -603,7 +605,7 @@ function ProjectionsPanel({ sales, currency }: { sales: Sale[]; currency: string
 
         {/* Nota sobre el outlier de abril 2025 */}
         <p className="text-[10px] text-gray-400 mt-3">
-          * El -31% vs 2025 incluye abr 25 (tu mes histórico: {fmt(Math.max(...m2025.map(m => m.amount)))}). Sin ese outlier, tu promedio 2025 es {fmt(avg2025NoBest)} y la brecha 2026 es solo {yoyNoBest >= 0 ? "+" : ""}{yoyNoBest.toFixed(1)}%.
+          {masked ? "* •••••" : `* El -31% vs 2025 incluye abr 25 (tu mes histórico: ${fmt(Math.max(...m2025.map(m => m.amount)))}). Sin ese outlier, tu promedio 2025 es ${fmt(avg2025NoBest)} y la brecha 2026 es solo ${yoyNoBest >= 0 ? "+" : ""}${yoyNoBest.toFixed(1)}%.`}
         </p>
       </div>
 
@@ -613,7 +615,7 @@ function ProjectionsPanel({ sales, currency }: { sales: Sale[]; currency: string
         <div>
           <p className={`text-xs font-medium ${momUp ? "text-emerald-600" : "text-red-500"}`}>Tendencia último mes</p>
           <p className={`text-xl font-bold ${momUp ? "text-emerald-800" : "text-red-700"}`}>
-            {momUp ? "+" : ""}{mom.toFixed(1)}%
+            {mpct(`${momUp ? "+" : ""}${mom.toFixed(1)}%`)}
           </p>
           <p className={`text-xs mt-0.5 ${momUp ? "text-emerald-500" : "text-red-400"}`}>
             {lastMonth.label} ({fmt(lastMonth.amount)}) vs {prevMonth.label} ({fmt(prevMonth.amount)})
