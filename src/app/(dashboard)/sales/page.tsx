@@ -653,6 +653,7 @@ function providerBadge(provider: string | undefined) {
 // ─── Commission Panel ───────────────────────────────────────────────────────
 
 function CommissionPanel({ sales, currency, onRefresh }: { sales: Sale[]; currency: string; onRefresh: () => void }) {
+  const { masked } = useMask();
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
 
@@ -694,7 +695,7 @@ function CommissionPanel({ sales, currency, onRefresh }: { sales: Sale[]; curren
     );
   }
 
-  const fmt = (v: number) => formatCurrency(v, currency);
+  const fmt = (v: number) => masked ? "•••••" : formatCurrency(v, currency);
 
   const byStatus = (st: CommissionStatus) => relevant.filter((s) => s.commissionStatus === st);
 
@@ -716,7 +717,7 @@ function CommissionPanel({ sales, currency, onRefresh }: { sales: Sale[]; curren
         <div className="flex items-center gap-3">
           {syncResult && <span className="text-xs text-green-600">{syncResult}</span>}
           <span className="text-xs text-gray-400">
-            Total: <span className="font-semibold text-gray-700">{fmt(grandTotal)}</span>
+            Total: <span className="font-semibold text-gray-700">{masked ? "•••••" : fmt(grandTotal)}</span>
           </span>
           <button
             onClick={handleSync}
@@ -737,8 +738,8 @@ function CommissionPanel({ sales, currency, onRefresh }: { sales: Sale[]; curren
             <div key={key} className={`${bg} border ${border} rounded-xl p-4`}>
               <p className={`text-xs font-semibold ${text} uppercase tracking-wide mb-2`}>{label}</p>
               <p className={`text-xl font-bold ${text}`}>{fmt(total)}</p>
-              <p className="text-xs text-gray-500 mt-1">{items.length} venta{items.length !== 1 ? "s" : ""} · {pct.toFixed(0)}%</p>
-              {key === "pendiente" && items.length > 0 && (
+              <p className="text-xs text-gray-500 mt-1">{items.length} venta{items.length !== 1 ? "s" : ""} · {masked ? "••%" : `${pct.toFixed(0)}%`}</p>
+              {key === "pendiente" && items.length > 0 && !masked && (
                 <ul className="mt-2 space-y-0.5">
                   {items.map((s) => (
                     <li key={s.id} className="flex justify-between text-xs text-amber-600">
