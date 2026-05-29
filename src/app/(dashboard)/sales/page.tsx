@@ -1711,14 +1711,14 @@ export default function SalesPage() {
                   <tr key={s.id} className="hover:bg-gray-50 transition-colors group">
                     <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{s.saleDate || s.travelDate || "—"}</td>
                     <td className="px-4 py-3 max-w-[200px]">
-                      <p className="font-medium text-gray-900 truncate">{s.product || "—"}</p>
+                      <p className="font-medium text-gray-900 truncate">{masked ? "••••••••••" : (s.product || "—")}</p>
                       <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                         {s.provider && providerBadge(s.provider)}
-                        {s.detail && <p className="text-xs text-gray-400 truncate">{s.detail}</p>}
+                        {!masked && s.detail && <p className="text-xs text-gray-400 truncate">{s.detail}</p>}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap font-mono">
-                      {s.id || "—"}
+                      {masked ? "••••••••••" : (s.id || "—")}
                     </td>
                     <td className="px-4 py-3">
                       {s.status ? (
@@ -1742,8 +1742,8 @@ export default function SalesPage() {
                       )}
                     </td>
                     <td className="px-4 py-3 max-w-[160px]">
-                      <p className="text-gray-900 truncate">{s.clientName || "—"}</p>
-                      {s.clientEmail && <p className="text-xs text-gray-400 truncate">{s.clientEmail}</p>}
+                      <p className="text-gray-900 truncate">{masked ? "••••••••••" : (s.clientName || "—")}</p>
+                      {!masked && s.clientEmail && <p className="text-xs text-gray-400 truncate">{s.clientEmail}</p>}
                     </td>
                     <td className="px-4 py-3">
                       <button
