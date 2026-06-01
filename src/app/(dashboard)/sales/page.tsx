@@ -1478,6 +1478,7 @@ export default function SalesPage() {
   const [showNewSale, setShowNewSale] = useState(false);
   const [editSale, setEditSale] = useState<Sale | null>(null);
   const [showSalesTable, setShowSalesTable] = useState(true);
+  const [monthFilter, setMonthFilter] = useState("all");
   const { masked } = useMask();
   const [syncState, setSyncState] = useState<
     "idle" | "loading" | "preview" | "done"
@@ -1523,8 +1524,17 @@ export default function SalesPage() {
 
   const isCancelled = (s: Sale) => s.status.toLowerCase().includes("cancelad");
 
-  const activeSales = hideCancelled ? sales.filter((s) => !isCancelled(s)) : sales;
-  const cancelledCount = sales.filter(isCancelled).length;
+  // Meses disponibles para el filtro
+  const availableMonths = [...new Set(
+    sales.map((s) => (s.saleDate || s.travelDate || "").slice(0, 7)).filter(Boolean)
+  )].sort((a, b) => b.localeCompare(a));
+
+  const salesByMonth = monthFilter === "all" ? sales : sales.filter((s) =>
+    (s.saleDate || s.travelDate || "").startsWith(monthFilter)
+  );
+
+  const activeSales = hideCancelled ? salesByMonth.filter((s) => !isCancelled(s)) : salesByMonth;
+  const cancelledCount = salesByMonth.filter(isCancelled).length;
 
   const statuses = [...new Set(activeSales.map((s) => s.status).filter(Boolean))];
   const paymentStatuses = [...new Set(activeSales.map((s) => s.paymentStatus).filter(Boolean))];
@@ -1649,6 +1659,17 @@ export default function SalesPage() {
             className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3c93d6]"
           />
         </div>
+        {availableMonths.length > 0 && (
+          <select value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)}
+            className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3c93d6] font-medium">
+            <option value="all">Todos los meses</option>
+            {availableMonths.map((m) => {
+              const [y, mo] = m.split("-");
+              const label = new Date(parseInt(y), parseInt(mo) - 1, 1).toLocaleDateString("es-CL", { month: "long", year: "numeric" });
+              return <option key={m} value={m}>{label.charAt(0).toUpperCase() + label.slice(1)}</option>;
+            })}
+          </select>
+        )}
         {statuses.length > 0 && (
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
             className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3c93d6]">
