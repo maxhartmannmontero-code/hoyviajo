@@ -142,20 +142,27 @@ export default function DashboardPage() {
 
   const now = new Date();
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const monthLabel = now.toLocaleDateString("es-CL", { month: "long", year: "numeric" });
 
   /* â"€â"€ Metrics â"€â"€ */
   const emitidas = (s: Sale) => s.status.toLowerCase().includes("emitid");
 
+  // Si no hay ventas en el mes actual, mostrar el último mes con datos
+  const monthsWithSales = [...new Set(
+    sales.filter(emitidas).map(s => (s.saleDate || s.createdAt || "").slice(0, 7)).filter(m => /^\d{4}-\d{2}$/.test(m))
+  )].sort((a, b) => b.localeCompare(a));
+  const displayMonth = monthsWithSales.includes(thisMonth) ? thisMonth : (monthsWithSales[0] ?? thisMonth);
+  const displayingPrevMonth = displayMonth !== thisMonth;
+  const monthLabel = new Date(displayMonth + "-15").toLocaleDateString("es-CL", { month: "long", year: "numeric" });
+
   const monthSales = sales.filter(s => {
     const d = s.saleDate || s.createdAt || "";
-    return d.startsWith(thisMonth) && emitidas(s);
+    return d.startsWith(displayMonth) && emitidas(s);
   });
   const monthSalesAmount = monthSales.reduce((sum, s) => sum + s.amount, 0);
   const monthSalesCount  = monthSales.length;
   const avgTicket        = monthSalesCount > 0 ? monthSalesAmount / monthSalesCount : 0;
   const monthCommissions = monthSales.reduce((sum, s) => sum + s.commission, 0);
-  const monthExpTotal    = expenses.filter(e => e.month === thisMonth).reduce((sum, e) => sum + e.amount, 0);
+  const monthExpTotal    = expenses.filter(e => e.month === displayMonth).reduce((sum, e) => sum + e.amount, 0);
 
   const sortedEmitidas = [...sales]
     .filter(emitidas)
@@ -245,6 +252,11 @@ export default function DashboardPage() {
             <p className="text-[13px] text-[#9EA9BA] mt-1.5 font-light tracking-wide">
               Resumen general · Hoy Viajo CRM
             </p>
+            {displayingPrevMonth && (
+              <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-[#C89035] bg-amber-50 border border-amber-100 rounded-lg px-3 py-1.5">
+                Mostrando {monthLabel} · sin ventas registradas en el mes actual
+              </p>
+            )}
           </div>
         </div>
 
